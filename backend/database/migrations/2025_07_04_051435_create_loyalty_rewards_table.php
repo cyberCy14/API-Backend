@@ -21,8 +21,8 @@ return new class extends Migration
 
             $table->string('reward_type');
             $table->decimal('point_cost');
-            $table->decimal('discound_value')->nullable();
-            $table->decimal('discount-percentage')->nullable();
+            $table->decimal('discount_value')->nullable();
+            $table->decimal('discount_percentage')->nullable();
 
             $table->unsignedBigInteger('item_id');
             $table->string('voucher_code')->nullable();

@@ -10,7 +10,7 @@ class Companies extends Model
     protected $fillable = [
         'company_name',
         'display_name',
-        'company_logo',
+        // 'company_logo',
         'business_type',
         'telephone_contact_1',
         'telephone_contact_2',

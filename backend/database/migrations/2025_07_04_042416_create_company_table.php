@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->string('company_name');
             $table->string('display_name');
-            $table->string('company_logo');
+            $table->string('company_logo')->nullable();
             $table->string('business_type');
 
             $table->string('telephone_contact_1');
