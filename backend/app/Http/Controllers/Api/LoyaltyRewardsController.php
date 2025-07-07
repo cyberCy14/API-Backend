@@ -31,7 +31,7 @@ class LoyaltyRewardsController extends Controller // Now, this line will work co
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'loyalty_program_id' => 'required',
+            //'loyalty_program_id' => 'required',
             'reward_name' => 'required|string|max:255',
             'reward_type' => 'required|string',
             'point_cost' => 'required|numeric|min:0',
@@ -48,48 +48,53 @@ class LoyaltyRewardsController extends Controller // Now, this line will work co
             return response()->json($validator->errors(), 422);
         }
 
-        $voucher = Rewards::create($request->all());
+        $rewards = Rewards::create($request->all());
 
-        return response()->json($voucher, 201);
+        return response()->json($rewards, 201);
     }
 
     // Show a single voucher
-    public function show($id)
+    public function show(Rewards $rewards)
     {
-        $voucher = Rewards::find($id);
+        $rewards = Rewards::find($rewards);
 
-        if (!$voucher) {
-            return new RewardsResource($company);
+        if (!$rewards) {
+            return new RewardsResource($rewards);
         }
 
-        return response()->json($voucher);
+        return response()->json($rewards);
     }
 
     // Update a voucher
     public function update(Request $request, Rewards $rewards)
     {
-        $voucher = Rewards::find($id);
+        $validator = Validator::make($request->all(), [
+            //'loyalty_program_id' => 'required',
+            'reward_name' => 'required|string|max:255',
+            'reward_type' => 'required|string',
+            'point_cost' => 'required|numeric|min:0',
+            'discount_value' => 'nullable|numeric',
+            'discount_percentage' => 'nullable|numeric',
+            'item_id' => 'required|integer',
+            'voucher_code' => 'nullable|string|unique:loyaltyRewards,voucher_code',
+            'is_active' => 'boolean',
+            'max_redemption_rate' => 'nullable|integer',
+            'expiration_days' => 'nullable|integer'
+        ]);
 
-        if (!$voucher) {
-            return response()->json(['message' => 'Voucher not found'], 404);
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
         }
 
-        $voucher->update($request->all());
-
-        return response()->json($voucher);
+        $valiDated = $validator->validated();
+        $rewards = new Rewards($valiDated);
+        return response()->json($rewards, 201);
     }
 
     // Delete a voucher
     public function destroy(Rewards $rewards)
     {
-        $voucher = Rewards::find($id);
-
-        if (!$voucher) {
-            return response()->json(['message' => 'Voucher not found'], 404);
-        }
-
-        $voucher->delete();
-
-        return response()->json(['message' => 'Voucher deleted']);
+        $rewards->delete();
+        return response()->json(['message' => $rewards]);
     }
 }

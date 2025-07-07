@@ -17,17 +17,17 @@ class RewardsResource extends JsonResource
             //return parent::toArray($request);
 
         return[
-            'loyalty_program_id' => 'required',
-            'reward_name' => 'required|string|max:255',
-            'reward_type' => 'required|string',
-            'point_cost' => 'required|numeric|min:0',
-            'discount_value' => 'nullable|numeric',
-            'discount_percentage' => 'nullable|numeric',
-            'item_id' => 'required|integer',
-            'voucher_code' => 'nullable|string|unique:loyaltyRewards,voucher_code',
-            'is_active' => 'boolean',
-            'max_redemption_rate' => 'nullable|integer',
-            'expiration_days' => 'nullable|integer'
+            'rewards_id' => $this->id,
+            'reward_name' => $this->reward_name,
+            'reward_type' => $this->reward_type,
+            'point_cost' => $this->point_cost,
+            'discount_value' => $this->discount_value,
+            'discount_percentage' => $this->discount_percentage,
+            'item_id' => $this->item_id,
+            'voucher_code' => $this->voucher_code,
+            'is_active' => $this->is_active,
+            'max_redemption_rate' => $this->max_redemption_rate,
+            'expiration_days' => $this->expiration_days
         ];
         
     }

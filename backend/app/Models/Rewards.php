@@ -12,7 +12,7 @@ class Rewards extends Model
     protected $table = 'loyaltyRewards';
 
     protected $fillable = [
-        'loyalty_program_id',
+        //'loyalty_program_id',
         'reward_name',
         'reward_type',
         'point_cost',
