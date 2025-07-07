@@ -1,12 +1,16 @@
 <?php
 
-use App\Http\Controllers\Api\CompanyController;
-use App\Http\Controllers\Api\RewardsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\LoyaltyRewardsController;
+use App\Http\Controllers\Api\CompanyController;
+
 
 Route::apiResource('company', CompanyController::class);
-Route::apiResource('rewards', RewardController::class);
+Route::apiResource('rewards', LoyaltyRewardsController::class);
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
 });
+
+
+

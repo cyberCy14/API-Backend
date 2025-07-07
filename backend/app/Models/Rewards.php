@@ -5,11 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class LoyaltyReward extends Model
+class Rewards extends Model
 {
     use HasFactory;
 
-    protected $table = 'loyalty_rewards';
+    protected $table = 'loyaltyRewards';
 
     protected $fillable = [
         'loyalty_program_id',

@@ -1,18 +1,30 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
+
+use App\Http\Controllers\Controller;
+use App\Http\Resources\RewardsResource;
 use Illuminate\Http\Request;
-use App\Models\LoyaltyReward;
+use App\Models\Rewards;
 use Illuminate\Support\Facades\Validator;
 
-class RewardsController extends Controller
+
+class LoyaltyRewardsController extends Controller // Now, this line will work correctly
 {
-    // List all vouchers
+    // List all rewards
     public function index()
     {
-        $vouchers = LoyaltyReward::all();
-        return response()->json($vouchers);
+        $rewards = Rewards::get();
+
+        if ($rewards->count() > 0){
+            return RewardsResource::collection($rewards);
+        }
+        else{
+            return response()->json(['message' => 'Empty'], status:200);
+        }
+        
+        
     }
 
     // Create a new voucher
@@ -36,7 +48,7 @@ class RewardsController extends Controller
             return response()->json($validator->errors(), 422);
         }
 
-        $voucher = LoyaltyReward::create($request->all());
+        $voucher = Rewards::create($request->all());
 
         return response()->json($voucher, 201);
     }
@@ -44,19 +56,19 @@ class RewardsController extends Controller
     // Show a single voucher
     public function show($id)
     {
-        $voucher = LoyaltyReward::find($id);
+        $voucher = Rewards::find($id);
 
         if (!$voucher) {
-            return response()->json(['message' => 'Voucher not found'], 404);
+            return new RewardsResource($company);
         }
 
         return response()->json($voucher);
     }
 
     // Update a voucher
-    public function update(Request $request, $id)
+    public function update(Request $request, Rewards $rewards)
     {
-        $voucher = LoyaltyReward::find($id);
+        $voucher = Rewards::find($id);
 
         if (!$voucher) {
             return response()->json(['message' => 'Voucher not found'], 404);
@@ -68,9 +80,9 @@ class RewardsController extends Controller
     }
 
     // Delete a voucher
-    public function destroy($id)
+    public function destroy(Rewards $rewards)
     {
-        $voucher = LoyaltyReward::find($id);
+        $voucher = Rewards::find($id);
 
         if (!$voucher) {
             return response()->json(['message' => 'Voucher not found'], 404);
