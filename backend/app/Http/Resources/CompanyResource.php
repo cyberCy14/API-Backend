@@ -38,6 +38,7 @@ class CompanyResource extends JsonResource
 
             'business_registration_number'=>$this->business_registration_number,
             'tin_number'=>$this->tin_number,
+            'currency_code'=>$this->currency_code,
             'created_at'=>$this->created_at,
 
         ];

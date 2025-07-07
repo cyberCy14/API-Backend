@@ -61,7 +61,7 @@ class CompanyController extends Controller
 
             $company = new Companies($validatedData);
             $company->company_name = $validatedData['company_name'];
-            $company->dispaly_name = $validatedData['dispaly_name'];
+            $company->dispaly_name = $validatedData['display_name'];
             $company->business_type = $validatedData['business_type'];
 
             $company->telephone_contact_1 = $validatedData['telephone_contact_1'];

@@ -32,8 +32,9 @@ return new class extends Migration
             $table->string('zipcode');
             $table->string('country');
 
-            $table->string('registration_number');
+            $table->string('business_registration_number');
             $table->string('tin_number');
+            $table->string('currency_code')->default('PHP');
 
             $table->timestamp('created_at')->useCurrent();
             $table->timestamp('updated_at')->useCurrent();
