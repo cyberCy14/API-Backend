@@ -33,13 +33,13 @@ class Rewards extends Model
     ];
 
     // Relationships
-    public function loyaltyProgram()
-    {
-        return $this->belongsTo(LoyaltyProgram::class);
-    }
+    // public function loyaltyProgram()
+    // {
+    //     return $this->belongsTo(LoyaltyProgram::class);
+    // }
 
-    public function item()
-    {
-        return $this->belongsTo(Item::class);
-    }
+    // public function item()
+    // {
+    //     return $this->belongsTo(Item::class);
+    // }
 }

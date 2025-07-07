@@ -7,7 +7,7 @@ use App\Http\Controllers\Api\CompanyController;
 
 
 Route::apiResource('company', CompanyController::class);
-Route::apiResource('rewards', LoyaltyRewardsController::class);
+Route::apiResource('reward', LoyaltyRewardsController::class);
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
 });

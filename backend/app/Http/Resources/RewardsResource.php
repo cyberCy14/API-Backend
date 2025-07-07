@@ -17,7 +17,7 @@ class RewardsResource extends JsonResource
             //return parent::toArray($request);
 
         return[
-            'rewards_id' => $this->id,
+            'id' => $this->id,
             'reward_name' => $this->reward_name,
             'reward_type' => $this->reward_type,
             'point_cost' => $this->point_cost,

@@ -15,10 +15,10 @@ class LoyaltyRewardsController extends Controller // Now, this line will work co
     // List all rewards
     public function index()
     {
-        $rewards = Rewards::get();
+        $reward = Rewards::get();
 
-        if ($rewards->count() > 0){
-            return RewardsResource::collection($rewards);
+        if ($reward->count() > 0){
+            return RewardsResource::collection($reward);
         }
         else{
             return response()->json(['message' => 'Empty'], status:200);
@@ -48,27 +48,28 @@ class LoyaltyRewardsController extends Controller // Now, this line will work co
             return response()->json($validator->errors(), 422);
         }
 
-        $rewards = Rewards::create($request->all());
+        $reward =Rewards::create([ 
+            'reward_name' => $request->reward_name,
+            'reward_type' => $request->reward_type,
+            'point_cost' => $request->point_cost,
+            'item_id' => $request->item_id,
+        ]);
 
-        return response()->json($rewards, 201);
+        return new RewardsResource($reward);
     }
 
     // Show a single voucher
-    public function show(Rewards $rewards)
+    public function show(Rewards $reward)
     {
-        $rewards = Rewards::find($rewards);
+        
+            return new RewardsResource($reward);
 
-        if (!$rewards) {
-            return new RewardsResource($rewards);
-        }
-
-        return response()->json($rewards);
     }
 
     // Update a voucher
-    public function update(Request $request, Rewards $rewards)
+    public function update(Request $request, Rewards $reward)
     {
-        $validator = Validator::make($request->all(), [
+        $validate = Validator::make($request->all(), [
             //'loyalty_program_id' => 'required',
             'reward_name' => 'required|string|max:255',
             'reward_type' => 'required|string',
@@ -82,19 +83,20 @@ class LoyaltyRewardsController extends Controller // Now, this line will work co
             'expiration_days' => 'nullable|integer'
         ]);
 
-        if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
-        }
-
-        $valiDated = $validator->validated();
-        $rewards = new Rewards($valiDated);
-        return response()->json($rewards, 201);
+            //'loyalty_program_id' => 'required',
+        $reward->update([
+            'reward_name' => $request->reward_name,
+            'reward_type' => $request->reward_type,
+            'point_cost' => $request->point_cost,
+            'item_id' => $request->item_id,
+        ]);
+        return new RewardsResource($reward);
     }
 
     // Delete a voucher
-    public function destroy(Rewards $rewards)
+    public function destroy(Rewards $reward)
     {
-        $rewards->delete();
-        return response()->json(['message' => $rewards]);
+        $reward->delete();
+        return response()->json(['message' => $reward]);
     }
 }
