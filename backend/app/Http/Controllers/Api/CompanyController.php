@@ -143,7 +143,7 @@ class CompanyController extends Controller
             $company->region = $validatedData['region'];
             $company->zipcode = $validatedData['zipcode'];
             $company->country = $validatedData['country'];
-            $company->registration_number = $validatedData['registration_number'];
+            $company->business_registration_number = $validatedData['business_registration_number'];
             $company->tin_number = $validatedData['tin_number'];
 
             if ($request->hasFile('company_logo')) {
