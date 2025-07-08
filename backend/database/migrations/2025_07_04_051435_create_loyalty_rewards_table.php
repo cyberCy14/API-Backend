@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('loyaltyRewards', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('loyalty_program_id');
-            $table->foreign('loyalty_program_id')->references('id')->on('loyaltyPrograms')->onDelete('cascade');
+            //$table->unsignedBigInteger('loyalty_program_id');
+            //$table->foreign('loyalty_program_id')->references('id')->on('loyaltyPrograms')->onDelete('cascade');
 
             $table->string('reward_name');
             $table->text('description')->nullable();
