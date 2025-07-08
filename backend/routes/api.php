@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\LoyaltyRuleController;
@@ -11,6 +12,9 @@ Route::apiResource('reward', LoyaltyRewardsController::class);
 
 Route::apiResource('company', CompanyController::class);
 Route::apiResource('loyalty-rules', LoyaltyRuleController::class);
-Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
-    return $request->user()->tokens;
-});
+// Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
+//     return $request->user()->tokens;
+// });
+Route::post('register',[AuthController::class, 'register']);
+Route::post('login',[AuthController::class, 'login']);
+Route::post('logout',[AuthController::class, 'logout'])->middleware('auth:sanctum');

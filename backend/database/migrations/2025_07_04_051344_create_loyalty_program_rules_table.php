@@ -19,7 +19,6 @@ return new class extends Migration
             $table->unsignedBigInteger('loyalty_program_id');
             $table->foreign('loyalty_program_id')->references('id')->on('loyaltyPrograms')->onDelete('cascade');
 
-
             $table->string('rule_name');
             $table->string('rule_type');
 

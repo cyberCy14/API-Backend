@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Crypt;
 
 use function Pest\Laravel\delete;
 
@@ -45,7 +46,7 @@ class CompanyController extends Controller
                     'country' => 'required|string|max:255',
                     'currency_code' => 'required|string|max:255',
 
-                    'registration_number' => 'required|string|max:255',
+                    'business_registration_number' => 'required|string|max:255',
                     'tin_number' => 'required|string|max:255',
 
                 ]);
@@ -59,9 +60,12 @@ class CompanyController extends Controller
 
             $validatedData = $validate->validated();
 
+                $business_number_token = Crypt::encryptString($validatedData['business_registration_number']);
+                $tin_number_token = Crypt::encryptString($validatedData['tin_number']);
+
             $company = new Companies($validatedData);
             $company->company_name = $validatedData['company_name'];
-            $company->dispaly_name = $validatedData['display_name'];
+            $company->display_name = $validatedData['display_name'];
             $company->business_type = $validatedData['business_type'];
 
             $company->telephone_contact_1 = $validatedData['telephone_contact_1'];
@@ -75,18 +79,18 @@ class CompanyController extends Controller
             $company->region = $validatedData['region'];
             $company->zipcode = $validatedData['zipcode'];
             $company->country = $validatedData['country'];
-            $company->registration_number = $validatedData['registration_number'];
-            $company->tin_number = $validatedData['tin_number'];
+            $company->business_registration_number = $business_number_token ;
+            $company->tin_number =  $tin_number_token;
 
             if ($request->hasFile('company_logo')) {
-            $logo = $request->file('company_logo');
+            $company_logo = $request->file('company_logo');
 
-            $path = $logo->store('company_logos', 'public');
+            $path = $company_logo->store('company_logos', 'public');
 
-            $fileName = Str::uuid() . '.' . $logo->getClientOriginalExtension();
-            $path = $logo->storeAs('company_logos', $fileName, 'public');
+            $fileName = Str::uuid() . '.' . $company_logo->getClientOriginalExtension();
+            $path = $company_logo->storeAs('company_logos', $fileName, 'public');
 
-            $company->logo_path = $path; // Save the generated path to the database
+            $company->company_logo = $path; // Save the generated path to the database
         }
         $company->save();
 
@@ -94,11 +98,11 @@ class CompanyController extends Controller
     }
     public function update(Request $request, Companies $company){
         
-           $validate = Validator::make($request->all(),
+        $validate = Validator::make($request->all(),
         [
                     'company_name' => 'required|string|max:255',
                     'display_name' => 'required|string|max:255',
-                    'company_logo' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                    'company_logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
                     'business_type' => 'required|string|max:255',
 
                     'telephone_contact_1' => 'required|string|max:255',
@@ -114,7 +118,7 @@ class CompanyController extends Controller
                     'country' => 'required|string|max:255',
                     'currency_code' => 'required|string|max:255',
 
-                    'registration_number' => 'required|string|max:255',
+                    'business_registration_number' => 'required|string|max:255',
                     'tin_number' => 'required|string|max:255',
 
                 ]);
@@ -126,10 +130,14 @@ class CompanyController extends Controller
                     ], 422); 
                 }
 
-            $validatedData = $validate->validated();
+                
+                $validatedData = $validate->validated();
+                
+                    $business_number_token = Crypt::encryptString($validatedData['business_registration_number']);
+                    $tin_number_token = Crypt::encryptString($validatedData['tin_number']);
 
             $company->company_name = $validatedData['company_name'];
-            $company->dispaly_name = $validatedData['dispaly_name'];
+            $company->display_name = $validatedData['display_name'];
             $company->business_type = $validatedData['business_type'];
 
             $company->telephone_contact_1 = $validatedData['telephone_contact_1'];
@@ -143,25 +151,28 @@ class CompanyController extends Controller
             $company->region = $validatedData['region'];
             $company->zipcode = $validatedData['zipcode'];
             $company->country = $validatedData['country'];
-            $company->business_registration_number = $validatedData['business_registration_number'];
-            $company->tin_number = $validatedData['tin_number'];
+            $company->business_registration_number = $business_number_token;
+            $company->tin_number =  $tin_number_token;
 
             if ($request->hasFile('company_logo')) {
-            $logo = $request->file('company_logo');
+            $company_logo = $request->file('company_logo');
 
-            $path = $logo->store('company_logos', 'public');
+            $path = $company_logo->store('company_logos', 'public');
 
-            $fileName = Str::uuid() . '.' . $logo->getClientOriginalExtension();
-            $path = $logo->storeAs('company_logos', $fileName, 'public');
+            $fileName = Str::uuid() . '.' . $company_logo->getClientOriginalExtension();
+            $path = $company_logo->storeAs('company_logos', $fileName, 'public');
 
-            $company->logo_path = $path; // Save the generated path to the database
-        }
+            $company->company_logo = $path; // Save the generated path to the database
+            }
         $company->save();
 
         return new CompanyResource($company);
 
     }
     public function show(Request $request, Companies $company){
+
+        $company->business_registration_number = Crypt::decryptString($company->business_registration_number);
+        $company->tin_number = Crypt::decryptString($company->tin_number);
         return new CompanyResource($company);
     }
     public function destroy(Companies $company){
