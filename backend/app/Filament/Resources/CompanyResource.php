@@ -5,22 +5,18 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\CompanyResource\Pages;
 use App\Filament\Resources\CompanyResource\RelationManagers;
 use App\Models\Company;
-<<<<<<< HEAD
-use Filament\Forms;
-=======
+
 use Exception;
 use Filament\Forms;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
->>>>>>> refs/remotes/origin/main
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-<<<<<<< HEAD
-=======
+
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Collection;
 use PhpParser\Node\Stmt\TryCatch;
@@ -33,7 +29,6 @@ use App\Helpers\getLocationDataHelper;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Tables\Columns\TextColumn;
->>>>>>> refs/remotes/origin/main
 
 class CompanyResource extends Resource
 {
@@ -43,15 +38,10 @@ class CompanyResource extends Resource
 
     public static function form(Form $form): Form
     {
-<<<<<<< HEAD
-        return $form
-            ->schema([
-                //
-=======
-        $busniessTypesPath = 'businessTypes.json';
+
+        $busniessTypesPath = 'json/businessTypes.json';
 
         $businessTypes = [];
-        $phLocations = [];
 
         try{
             $businessTypesJson = Storage::disk('local')->get($busniessTypesPath); 
@@ -61,7 +51,6 @@ class CompanyResource extends Resource
         catch(Exception $e){
             echo $e;
         }
-// dd(getLocationDataHelper::getRegions());
         $businessTypesOptions = Collection::make($businessTypes)->pluck('name', 'id')->toArray();
 
         return $form
@@ -187,7 +176,6 @@ class CompanyResource extends Resource
                     ->maxLength(255)
                     ->label('TIN Number'),
 
->>>>>>> refs/remotes/origin/main
             ]);
     }
 
@@ -195,11 +183,7 @@ class CompanyResource extends Resource
     {
         return $table
             ->columns([
-<<<<<<< HEAD
-                //
-=======
                 TextColumn::make('company_name')
->>>>>>> refs/remotes/origin/main
             ])
             ->filters([
                 //

@@ -19,14 +19,9 @@ return new class extends Migration
             $table->unsignedBigInteger('loyalty_program_id');
             $table->foreign('loyalty_program_id')->references('id')->on('loyaltyPrograms')->onDelete('cascade');
 
-<<<<<<< HEAD
-
             $table->string('rule_name', 255);
             $table->enum('rule_type', ['purchase_based', 'referral', 'bonus'])->default('purchase_based');
-=======
-            $table->string('rule_name');
-            $table->string('rule_type');
->>>>>>> refs/remotes/origin/main
+
 
             $table->unsignedBigInteger('points_earned')->default(0);
             $table->decimal('amount_per_point', 10 , 2)->nullable();

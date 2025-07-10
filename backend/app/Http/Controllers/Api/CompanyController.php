@@ -62,12 +62,9 @@ class CompanyController extends Controller
             $validatedData = $validate->validated();
 
             $company = new Company($validatedData);
-<<<<<<< HEAD
             $company->company_name = $validatedData['company_name'];
             $company->dispaly_name = $validatedData['display_name'];
             $company->business_type = $validatedData['business_type'];
-=======
->>>>>>> refs/remotes/origin/main
 
             $business_number_token = Crypt::encryptString($validatedData['business_registration_number']);
             $tin_number_token = Crypt::encryptString($validatedData['tin_number']);
@@ -145,14 +142,10 @@ class CompanyController extends Controller
         return new CompanyResource($company);
 
     }
-<<<<<<< HEAD
-    public function show(Request $request, Company $company){
-=======
-    public function show(Company $company){
 
+    public function show(Company $company){
         $company->business_registration_number = Crypt::decryptString($company->business_registration_number);
         $company->tin_number = Crypt::decryptString($company->tin_number);
->>>>>>> refs/remotes/origin/main
         return new CompanyResource($company);
     }
     public function destroy(Company $company){
