@@ -13,24 +13,25 @@ return new class extends Migration
     {
         Schema::create('companies', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id');
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            // $table->unsignedBigInteger('user_id');
+            // $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->string('company_name');
             $table->string('display_name');
-            $table->string('company_logo');
+            $table->string('company_logo')->nullable();
             $table->string('business_type');
 
             $table->string('telephone_contact_1');
-            $table->string('telephone_contact_2');
+            $table->string('telephone_contact_2')->nullable();
             $table->string('email_contact_1');
-            $table->string('email_contact_2');
+            $table->string('email_contact_2')->nullable();
 
             $table->string('barangay');
             $table->string('city_municipality');
             $table->string('province');
             $table->string('region');
             $table->string('zipcode');
-            $table->string('country');
+            $table->string('street');
+            $table->string('country')->default('Philippines')->nullable();
 
             $table->string('business_registration_number');
             $table->string('tin_number');

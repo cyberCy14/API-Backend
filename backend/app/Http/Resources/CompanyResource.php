@@ -29,12 +29,13 @@ class CompanyResource extends JsonResource
             'email_contact_1' => $this->address_contact_1,
             'email_contact_2' => $this->address_contact_2,
 
+            'country'=>$this->country,
+            'province'=>$this->province,
             'barangay' => $this->barangay,
             'city_municipality'=>$this->city_municipality,
             'region'=>$this->region,
-            'province'=>$this->province,
             'zipcode'=>$this->zipcode,
-            'country'=>$this->country,
+            'street'=>$this->street,
 
             'business_registration_number'=>$this->business_registration_number,
             'tin_number'=>$this->tin_number,

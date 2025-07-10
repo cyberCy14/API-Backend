@@ -22,7 +22,8 @@ class Company extends Model
         'region',
         'zipcode',
         'country',
-        'registration_number',
+        'street',
+        'business_registration_number',
         'tin_number',
         'currency_code',
     ];

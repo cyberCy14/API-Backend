@@ -2,5 +2,9 @@
 
 return [
     App\Providers\AppServiceProvider::class,
+<<<<<<< HEAD
     App\Providers\Filament\AdminPanelProvider::class,
+=======
+    App\Providers\Filament\EyesCodePanelProvider::class,
+>>>>>>> refs/remotes/origin/main
 ];
