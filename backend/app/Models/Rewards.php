@@ -11,8 +11,11 @@ class Rewards extends Model
 
     protected $table = 'loyaltyRewards';
 
+    /**
+     * The attributes that are mass assignable.
+     */
     protected $fillable = [
-        //'loyalty_program_id',
+        'loyalty_program_id', // <-- FIX: Added this so you can create rewards for a program.
         'reward_name',
         'reward_type',
         'point_cost',
@@ -23,23 +26,29 @@ class Rewards extends Model
         'is_active',
         'max_redemption_rate',
         'expiration_days',
+        'description', // Also added description just in case
     ];
 
+    /**
+     * The attributes that should be cast to native types.
+     */
     protected $casts = [
         'is_active' => 'boolean',
-        'point_cost' => 'float',
-        'discount_value' => 'float',
-        'discount_percentage' => 'float',
+        'point_cost' => 'decimal:2',
+        'discount_value' => 'decimal:2',
+        'discount_percentage' => 'decimal:2',
     ];
 
-    // Relationships
-    // public function loyaltyProgram()
-    // {
-    //     return $this->belongsTo(LoyaltyProgram::class);
-    // }
+    // Relationships - These are fine
+    public function loyaltyProgram()
+    {
+        // Assuming you have a LoyaltyProgram model
+        return $this->belongsTo(LoyaltyProgram::class);
+    }
 
-    // public function item()
-    // {
-    //     return $this->belongsTo(Item::class);
-    // }
+    public function item()
+    {
+        // Assuming you have an Item model
+        return $this->belongsTo(Item::class);
+    }
 }
