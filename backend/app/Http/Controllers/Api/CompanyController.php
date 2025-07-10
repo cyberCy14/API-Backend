@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CompanyResource;
-use App\Models\Companies;
+use App\Models\Company;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
@@ -15,7 +15,7 @@ use function Pest\Laravel\delete;
 class CompanyController extends Controller
 {
     public function index(){
-        $company = Companies::get();
+        $company = Company::get();
         if($company->count() > 0){
             return CompanyResource::collection($company);
         }
@@ -59,7 +59,7 @@ class CompanyController extends Controller
 
             $validatedData = $validate->validated();
 
-            $company = new Companies($validatedData);
+            $company = new Company($validatedData);
             $company->company_name = $validatedData['company_name'];
             $company->dispaly_name = $validatedData['display_name'];
             $company->business_type = $validatedData['business_type'];
@@ -92,7 +92,7 @@ class CompanyController extends Controller
 
         return new CompanyResource($company);
     }
-    public function update(Request $request, Companies $company){
+    public function update(Request $request, Company $company){
         
            $validate = Validator::make($request->all(),
         [
@@ -161,10 +161,10 @@ class CompanyController extends Controller
         return new CompanyResource($company);
 
     }
-    public function show(Request $request, Companies $company){
+    public function show(Request $request, Company $company){
         return new CompanyResource($company);
     }
-    public function destroy(Companies $company){
+    public function destroy(Company $company){
 
             $company->delete();
             return response()->json([
