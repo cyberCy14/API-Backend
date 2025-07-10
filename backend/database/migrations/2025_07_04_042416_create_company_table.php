@@ -21,16 +21,17 @@ return new class extends Migration
             $table->string('business_type');
 
             $table->string('telephone_contact_1');
-            $table->string('telephone_contact_2');
+            $table->string('telephone_contact_2')->nullable();
             $table->string('email_contact_1');
-            $table->string('email_contact_2');
+            $table->string('email_contact_2')->nullable();
 
             $table->string('barangay');
             $table->string('city_municipality');
             $table->string('province');
             $table->string('region');
             $table->string('zipcode');
-            $table->string('country');
+            $table->string('street');
+            $table->string('country')->default('Philippines')->nullable();
 
             $table->string('business_registration_number');
             $table->string('tin_number');
