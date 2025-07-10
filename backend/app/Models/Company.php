@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Companies extends Model
+class Company extends Model
 {
     protected $company = 'companies';
     protected $fillable = [
@@ -22,7 +22,8 @@ class Companies extends Model
         'region',
         'zipcode',
         'country',
-        'registration_number',
+        'street',
+        'business_registration_number',
         'tin_number',
         'currency_code',
     ];
