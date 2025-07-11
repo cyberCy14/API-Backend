@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\CompanyResource\Pages;
 use App\Filament\Resources\CompanyResource\RelationManagers;
 use App\Models\Company;
+
 use Exception;
 use Filament\Forms;
 use Filament\Forms\Components\Placeholder;
@@ -15,6 +16,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Collection;
 use PhpParser\Node\Stmt\TryCatch;
@@ -36,10 +38,10 @@ class CompanyResource extends Resource
 
     public static function form(Form $form): Form
     {
-        $busniessTypesPath = 'businessTypes.json';
+
+        $busniessTypesPath = 'json/businessTypes.json';
 
         $businessTypes = [];
-        $phLocations = [];
 
         try{
             $businessTypesJson = Storage::disk('local')->get($busniessTypesPath); 
@@ -49,7 +51,6 @@ class CompanyResource extends Resource
         catch(Exception $e){
             echo $e;
         }
-// dd(getLocationDataHelper::getRegions());
         $businessTypesOptions = Collection::make($businessTypes)->pluck('name', 'id')->toArray();
 
         return $form
