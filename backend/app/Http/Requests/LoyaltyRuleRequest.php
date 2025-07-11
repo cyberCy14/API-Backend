@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Rules\ValidRuleTypeFields;
 
 class LoyaltyRuleRequest extends FormRequest
 {
@@ -22,6 +23,8 @@ class LoyaltyRuleRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'rule_type' => ['required', 'string', 'in:purchase_based,birthday_bonus,referral_bonus'],
+            new ValidRuleTypeFields($this->all()),
             'loyalty_program_id' => 'required|exists:loyaltyPrograms,id',
             'rule_name' => 'required|string|max:255',
             'rule_type' => 'required|string|in:purchase_based,birthday_bonus,referral_bonus,',

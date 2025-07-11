@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Rules\ValidRewardFields;
 
 class LoyaltyRewardsRequest extends FormRequest
 {
@@ -24,7 +25,8 @@ class LoyaltyRewardsRequest extends FormRequest
         return [
             'loyalty_program_id' => 'required|exists:loyaltyPrograms,id',
             'reward_name' => 'required|string|max:255',
-            'reward_type' => 'required|string',
+            'reward_type' => ['required', 'string'],
+            new ValidRewardFields($this->all()),
             'point_cost' => 'required|numeric|min:0',
             'discount_value' => 'nullable|numeric',
             'discount_percentage' => 'nullable|numeric',
