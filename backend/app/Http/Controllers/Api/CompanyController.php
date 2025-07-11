@@ -32,6 +32,7 @@ class CompanyController extends Controller
                     'display_name' => 'required|string|max:255',
                     'company_logo' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
                     'business_type' => 'required|string|max:255',
+                    'user_id' => 'required|int|',
 
                     'telephone_contact_1' => 'required|string|max:255',
                     'telephone_contact_2' => 'nullable|string|max:255',
@@ -66,12 +67,6 @@ class CompanyController extends Controller
             $company->dispaly_name = $validatedData['display_name'];
             $company->business_type = $validatedData['business_type'];
 
-            $business_number_token = Crypt::encryptString($validatedData['business_registration_number']);
-            $tin_number_token = Crypt::encryptString($validatedData['tin_number']);
-
-            $company->business_registration_number = $business_number_token ;
-            $company->tin_number =  $tin_number_token;
-
             if ($request->hasFile('company_logo')) {
             $company_logo = $request->file('company_logo');
 
@@ -92,6 +87,7 @@ class CompanyController extends Controller
                     'display_name' => 'required|string|max:255',
                     'company_logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
                     'business_type' => 'required|string|max:255',
+                    'user_id' => 'required|int|',
 
                     'telephone_contact_1' => 'required|string|max:255',
                     'telephone_contact_2' => 'nulable|string|max:255',
@@ -123,12 +119,6 @@ class CompanyController extends Controller
 
             $company->fill($validatedData);
 
-                $business_number_token = Crypt::encryptString($validatedData['business_registration_number']);
-                $tin_number_token = Crypt::encryptString($validatedData['tin_number']);
-
-            $company->business_registration_number = $business_number_token;
-            $company->tin_number =  $tin_number_token;
-
             if ($request->hasFile('company_logo')) {
             $company_logo = $request->file('company_logo');
 
@@ -144,8 +134,6 @@ class CompanyController extends Controller
     }
 
     public function show(Company $company){
-        $company->business_registration_number = Crypt::decryptString($company->business_registration_number);
-        $company->tin_number = Crypt::decryptString($company->tin_number);
         return new CompanyResource($company);
     }
     public function destroy(Company $company){

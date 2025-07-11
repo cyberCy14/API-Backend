@@ -5,7 +5,6 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\CompanyResource\Pages;
 use App\Filament\Resources\CompanyResource\RelationManagers;
 use App\Models\Company;
-
 use Exception;
 use Filament\Forms;
 use Filament\Forms\Components\Placeholder;
@@ -13,28 +12,31 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Collection;
 use PhpParser\Node\Stmt\TryCatch;
-
 use function Pest\Laravel\get;
 use function Pest\Laravel\json;
 use function PHPUnit\Framework\returnCallback;
-
-use App\Helpers\getLocationDataHelper;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use App\Helpers\getLocationDataHelper;
 
 class CompanyResource extends Resource
 {
     protected static ?string $model = Company::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-briefcase';
+
+    public static function getEloquentQuery(): Builder{
+            return parent::getEloquentQuery()
+                        ->with('user');
+    }
 
     public static function form(Form $form): Form
     {
@@ -57,6 +59,9 @@ class CompanyResource extends Resource
 
             ->schema([
                 
+                Forms\Components\Section::make('Company Association')
+                ->schema([
+                        
                     Forms\Components\TextInput::make('company_name')
                     ->required()
                     ->maxLength(255)
@@ -68,18 +73,32 @@ class CompanyResource extends Resource
                     Forms\Components\FileUpload::make('company_logo')
                     ->required()
                     ->label('Company Logo')
-                    ->disk('public')
-                    ->previewable(true)
+                    ->imageCropAspectRatio('1:1') 
+                    ->imageResizeTargetWidth('200') 
+                    ->imageResizeTargetHeight('200')
+                    ->maxSize(548) 
                     ->image(),
 
                     Forms\Components\Select::make('business_type')
                     ->required()
                     ->label('Business Type')
                     ->options($businessTypesOptions)
-                    ->preload()
+                    ->preload(false)
                     ->searchable(),
 
-                    Forms\Components\TextInput::make('telephone_contact_1')
+                    Forms\Components\Select::make('user_id')
+                    ->required()
+                    ->label('Employee Name')
+                    ->relationship('user', titleAttribute: 'name')
+                    ->preload(false)
+                    ->searchable(),
+                ])
+                ->columns(2),
+
+                    Forms\Components\Section::make('Company Contacts')
+                    ->schema([
+
+                        Forms\Components\TextInput::make('telephone_contact_1')
                     ->required()
                     ->numeric()
                     ->maxLength(255)
@@ -101,11 +120,17 @@ class CompanyResource extends Resource
                     ->email()
                     ->label('Email Contact Address'),
 
-                    Forms\Components\Select::make('region')
+                    ])
+                    ->columns(2),
+
+                    Forms\Components\Section::make('Company Address')
+                    ->schema([
+
+                        Forms\Components\Select::make('region')
                     ->required()
                     ->label('Region')
                     ->options(getLocationDataHelper::getRegions())
-                    ->preload()
+                    ->preload(false)
                     ->live()
                     ->afterStateUpdated(function(Set $set){
                         $set('province', null);
@@ -121,7 +146,7 @@ class CompanyResource extends Resource
                         $regionCode = $get('region');
                         return getLocationDataHelper::getProvince($regionCode);
                     })
-                    ->preload()
+                    ->preload(false)
                     ->live()
                     ->searchable()
                     ->afterStateUpdated(function(Set $set){
@@ -137,7 +162,7 @@ class CompanyResource extends Resource
                         $provinceName = $get('province');
                         return getLocationDataHelper::getMunicipality($regionCode, $provinceName);
                     })
-                    ->preload()
+                    ->preload(false)
                     ->live()
                     ->searchable(),
 
@@ -150,7 +175,7 @@ class CompanyResource extends Resource
                         $municipality = $get('city_municipality');
                         return getLocationDataHelper::getBarangay($regionCode, $provinceName, $municipality);
                     })
-                    ->preload()
+                    ->preload(false)
                     ->live()
                     ->searchable(),
 
@@ -165,7 +190,13 @@ class CompanyResource extends Resource
                     ->maxLength(255)
                     ->label('Street'),
 
-                    Forms\Components\TextInput::make('business_registration_number')
+                    ])
+                    ->columns(2),
+
+                    Forms\Components\Section::make('Company Identification Number (CIN)')
+                    ->schema([
+
+                        Forms\Components\TextInput::make('business_registration_number')
                     ->required()
                     ->maxLength(255)
                     ->label('Business Registration Number'),
@@ -176,6 +207,9 @@ class CompanyResource extends Resource
                     ->maxLength(255)
                     ->label('TIN Number'),
 
+                    ])
+                    ->columns(2),
+
             ]);
     }
 
@@ -183,11 +217,25 @@ class CompanyResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('company_name')
+                TextColumn::make('company_name'),
+                TextColumn::make('business_type')
             ])
             ->filters([
                 //
-            ])
+                SelectFilter::make('company_name')
+                ->label('Company Name')
+                ->options(static::getModel()::distinct()->pluck('company_name', 'company_name')->toArray())
+                ->searchable()
+                ->preload(),
+
+                SelectFilter::make('business_type')
+                ->label('Business Type')
+                ->options(static::getModel()::distinct()->pluck('business_type', 'business_type')->toArray())
+                ->searchable()
+                ->preload()
+
+            ], FiltersLayout::AboveContent)
+                ->filtersFormColumns(2)
             ->actions([
                 Tables\Actions\EditAction::make(),
             ])

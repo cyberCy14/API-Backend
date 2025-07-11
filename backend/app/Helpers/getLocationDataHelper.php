@@ -58,7 +58,6 @@ class getLocationDataHelper{
     }
         return Collection::make($data['region_code'][$regionCode]['province_list'])->mapWithKeys(fn($province, $code)=>[$code => $code])->all();
 
-    // return Collection::make($data['region_code'])
   }
 
     public static function getMunicipality(?string $regionCode, ?string $provinceName):array{
@@ -69,7 +68,6 @@ class getLocationDataHelper{
     }
         return Collection::make($data['region_code'][$regionCode]['province_list'][$provinceName]['municipality_list'])->mapWithKeys(fn($municipality, $code)=> [$code=>$code])->all();
 
-    // return Collection::make($data['region_code'])
   }
 
     public static function getBarangay(?string $regionCode, ?string $provinceName, ?string $municipality):array{
