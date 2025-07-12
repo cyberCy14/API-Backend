@@ -43,8 +43,8 @@ return new class extends Migration
             $table->string('country', 100)->default('Philippines');
 
             // Business Identifiers
-            $table->string('business_registration_number', 100);
-            $table->string('tin_number', 50);
+            $table->string('business_registration_number');
+            $table->string('tin_number');
             $table->char('currency_code', 3)->default('PHP');
 
             // Status

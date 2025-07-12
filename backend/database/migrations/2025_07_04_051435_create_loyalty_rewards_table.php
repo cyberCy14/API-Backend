@@ -32,10 +32,10 @@ return new class extends Migration
             $table->decimal('discount_percentage', 5, 2)->nullable();
 
             // Item/voucher
-            $table->foreignId('item_id')
-                ->nullable()
-                ->constrained('items')
-                ->nullOnDelete();
+            // $table->foreignId('item_id')
+            //     ->nullable()
+            //     ->constrained('items')
+            //     ->nullOnDelete();
             $table->string('voucher_code', 100)->nullable();
 
             // Status and limits

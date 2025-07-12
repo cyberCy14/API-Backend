@@ -10,6 +10,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class CompanyResource extends Resource
 {
@@ -110,9 +111,9 @@ class CompanyResource extends Resource
     protected static function getBusinessTypes(): Collection
     {
         try {
-            return collect(json_decode(Storage::disk('local')->get('json/businessTypes.json'), true));
+            return collect(json_decode(Storage::disk('local')->get('businessTypes.json'), true));
         } catch (\Throwable $e) {
-            \Log::error('BusinessTypes load failed: ' . $e->getMessage());
+            Log::error('BusinessTypes load failed: ' . $e->getMessage());
             return collect();
         }
     }

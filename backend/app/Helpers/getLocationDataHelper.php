@@ -12,7 +12,7 @@ class GetLocationDataHelper
     /**
      * Path to the JSON file containing PH locations
      */
-    protected static string $path = 'json/philippine_provinces_cities_municipalities_and_barangays_2019v2.json';
+    protected static string $path = 'philippine_provinces_cities_municipalities_and_barangays_2019v2.json';
 
     /**
      * Load PH location data from cache or JSON file
