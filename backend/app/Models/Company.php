@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Cache\Events\RetrievingKey;
+use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Cache\Events\RetrievingKey;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
@@ -34,10 +35,39 @@ class Company extends Model
 
     protected $casts = [
         'business_registration_number' => 'encrypted',
-        'tin_number'=> 'encrypted',
+        'tin_number' => 'encrypted',
     ];
 
-    public function user():BelongsTo{
+    public function user(): BelongsTo
+    {
         return $this->belongsTo(User::class);
+    }
+    public static function rules(): array
+    {
+        return [
+            'business_registration_number' => [
+                'required',
+                'string',
+                'max:50',
+                'unique:companies,business_registration_number',
+                'regex:/^[A-Z0-9\-]+$/i'
+            ],
+            'tin_number' => [
+                'required',
+                'string',
+                'max:15',
+                'unique:companies,tin_number',
+                'regex:/^\d{9,12}$/'
+            ],
+            // ...other rules
+        ];
+    }
+    protected static function booted()
+    {
+        static::creating(function ($model) {
+            if (empty($model->uuid)) {
+                $model->uuid = (string) Str::uuid();
+            }
+        });
     }
 }
