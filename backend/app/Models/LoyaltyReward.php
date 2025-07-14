@@ -20,7 +20,7 @@ class LoyaltyReward extends Model
         'point_cost',
         'discount_value',
         'discount_percentage',
-        'item_id',
+        // 'item_id',
         'voucher_code',
         'is_active',
         'max_redemption_rate',

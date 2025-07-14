@@ -36,6 +36,7 @@ return new class extends Migration
             //     ->nullable()
             //     ->constrained('items')
             //     ->nullOnDelete();
+            
             $table->string('voucher_code', 100)->nullable();
 
             // Status and limits
