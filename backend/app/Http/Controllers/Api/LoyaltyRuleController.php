@@ -39,7 +39,7 @@ class LoyaltyRuleController extends Controller
             ->get()
             ->map(function ($rule) {
                 $rule->is_currently_active = $rule->is_active;
-                $rule->description = $rule->description;
+                // $rule->description = $rule->description;
                 return $rule;
             });
 
@@ -53,18 +53,14 @@ class LoyaltyRuleController extends Controller
     public function store(LoyaltyRuleRequest $request)
     {
         $user = Auth::user();
-        $loyaltyProgram = LoyaltyProgram::findOrFail($request->loyalty_program_id);
+        $program = LoyaltyProgram::findOrFail($request->loyalty_program_id);
 
-        if ($loyaltyProgram->company_id !== $user->company_id) {
+        if ($program->company_id !== $user->company_id) {
             return response()->json(['error' => 'Loyalty program is not available'], 403);
         }
 
         $rule = LoyaltyProgramRule::create($request->validated() + ['is_active' => true]);
-
-        return response()->json([
-            'message' => 'Loyalty rule created successfully',
-            'rule' => $rule->load('loyaltyProgram')
-        ], 201);
+        return response()->json(['rule' => $rule->load('loyaltyProgram')], 201);
     }
 
     public function show($id)
@@ -83,7 +79,7 @@ class LoyaltyRuleController extends Controller
         ]);
     }
 
-    public function update(Request $request, $id)
+    public function update(LoyaltyRuleRequest $request, $id)
     {
         $rule = LoyaltyProgramRule::with('loyaltyProgram')->findOrFail($id);
         $user = Auth::user();
@@ -92,34 +88,8 @@ class LoyaltyRuleController extends Controller
             return response()->json(['error' => 'Loyalty rule not found'], 404);
         }
 
-        $request->validate([
-            'rule_name' => 'required|string|max:255',
-            'rule_type' => 'required|string|in:purchase_based,birthday_bonus,referral_bonus',
-            'points_earned' => 'nullable|numeric|min:0',
-            'amount_per_point' => 'nullable|numeric|min:0.01',
-            'min_purchase_amount' => 'nullable|numeric|min:0',
-            'product_category_id' => 'nullable|integer',
-            'product_item_id' => 'nullable|integer',
-            'active_from_date' => 'nullable|date',
-            'active_to_date' => 'nullable|date|after_or_equal:active_from_date'
-        ]);
-
-        $rule->update($request->only(
-            'rule_name',
-            'rule_type',
-            'points_earned',
-            'amount_per_point',
-            'min_purchase_amount',
-            'product_category_id',
-            'product_item_id',
-            'active_from_date',
-            'active_to_date'
-        ));
-
-        return response()->json([
-            'message' => 'Loyalty rule updated successfully',
-            'rule' => $rule->fresh()->load('loyaltyProgram')
-        ]);
+        $rule->update($request->validated());
+        return response()->json(['rule' => $rule->fresh()->load('loyaltyProgram')]);
     }
 
     public function destroy($id)
@@ -141,41 +111,23 @@ class LoyaltyRuleController extends Controller
     public function calculatePointsForPurchase(CalculateAndAwardRequest $request)
     {
         $user = User::findOrFail($request->user_id);
-
-        $result = $this->calculateEarnedPoints(
-            $user,
-            $request->purchase_amount,
-            $request->product_category_id,
-            $request->product_item_id,
-            $request->loyalty_program_id
-        );
-
-        return response()->json($result);
+        return response()->json($this->calculateEarnedPoints(...));
     }
 
     public function awardPoints(CalculateAndAwardRequest $request)
     {
         $user = User::findOrFail($request->user_id);
-
-        $result = $this->calculateEarnedPoints(
-            $user,
-            $request->purchase_amount,
-            $request->product_category_id,
-            $request->product_item_id,
-            $request->loyalty_program_id
-        );
+        $result = $this->calculateEarnedPoints($user, $request->purchase_amount, $request->product_category_id, $request->product_item_id, $request->loyalty_program_id);
 
         if ($result['total_points_earned'] > 0) {
-            DB::transaction(function () use ($user, $result) {
-                $user->addPoints($result['total_points_earned']);
-            });
+            DB::transaction(fn() => $user->addPoints($result['total_points_earned']));
         }
 
         return response()->json([
-            'message' => 'Points added successfully',
+            'message' => 'Points awarded successfully',
             'user_id' => $user->id,
             'points_awarded' => $result['total_points_earned'],
-            'new_points_balance' => $user->fresh()->points_balance,
+            'new_balance' => $user->fresh()->points_balance,
             'applied_rules' => $result['applied_rules']
         ]);
     }
