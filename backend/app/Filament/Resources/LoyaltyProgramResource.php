@@ -22,6 +22,7 @@ use Filament\Notifications\Collection;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 
 class LoyaltyProgramResource extends Resource
 {
@@ -66,7 +67,7 @@ class LoyaltyProgramResource extends Resource
                 TextColumn::make('created_at')->date(),
             ])
             ->filters([
-                //
+                SelectFilter::make('program_type')->searchable()->preload()
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

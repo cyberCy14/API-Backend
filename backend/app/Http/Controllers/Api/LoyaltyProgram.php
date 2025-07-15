@@ -10,8 +10,8 @@ use Illuminate\Http\Request;
 class LoyaltyProgram extends Controller
 {
 
-    public function show(LoyaltyProgramResource $loyaltyProgram){
-        return new LoyaltyProgramResource($loyaltyProgram);
+    public function show(LoyaltyProgramResource $loyalty_program){
+        return new LoyaltyProgramResource($loyalty_program);
         
     }
     public function store(){
