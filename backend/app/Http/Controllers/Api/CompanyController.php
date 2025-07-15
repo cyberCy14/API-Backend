@@ -20,7 +20,7 @@ class CompanyController extends Controller
         $data = $request->validated();
 
         $company = new Company($data);
-        $company->dispaly_name = $data['display_name']; // fix typo if exists in DB
+        $company->display_name = $data['display_name'];
 
         if ($request->hasFile('company_logo')) {
             $file = $request->file('company_logo');

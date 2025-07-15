@@ -18,9 +18,9 @@ class LoyaltyRuleController extends Controller
     {
         $user = Auth::user();
 
-        if (!$user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
+        // if (!$user) {
+        //     return response()->json(['error' => 'Unauthorized'], 401);
+        // }
 
         $rules = LoyaltyProgramRule::with('loyaltyProgram')
             ->whereHas('loyaltyProgram', function ($query) use ($user) {
