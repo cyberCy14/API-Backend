@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\RewardsResource;
 use App\Models\LoyaltyReward as Rewards;
 use Illuminate\Http\Request;
+
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Validator;
 
@@ -37,23 +38,23 @@ class LoyaltyRewardsController extends Controller
     {
         $reward = Rewards::create($request->validated());
 
-        $reward = Rewards::create([ 
-            'loyalty_program_id' => $request->loyalty_program_id,
-            'reward_name' => $request->reward_name,
-            'reward_type' => $request->reward_type,
-            'point_cost' => $request->point_cost,
-            'discount_value' => $request->discount_value,
-            'discount_percentage' => $request->discount_percentage,
-            'item_id' => $request->item_id,
-            'voucher_code' => $request->voucher_code,
-            'is_active' => $request->is_active,
-        ]);
+        // $reward = Rewards::create([ 
+        //     'loyalty_program_id' => $request->loyalty_program_id,
+        //     'reward_name' => $request->reward_name,
+        //     'reward_type' => $request->reward_type,
+        //     'point_cost' => $request->point_cost,
+        //     'discount_value' => $request->discount_value,
+        //     'discount_percentage' => $request->discount_percentage,
+        //     'item_id' => $request->item_id,
+        //     'voucher_code' => $request->voucher_code,
+        //     'is_active' => $request->is_active,
+        // ]);
 
         return new RewardsResource($reward);
     }
 
     // Show a single voucher
-    public function show(Rewards $reward)
+    public function show(LoyaltyReward $reward)
     {
             return new RewardsResource($reward);
     }
@@ -73,7 +74,7 @@ class LoyaltyRewardsController extends Controller
     }
 
     // Delete a voucher
-    public function destroy(Rewards $reward)
+    public function destroy(LoyaltyReward $reward)
     {
         $reward->delete();
         return response()->json(['message' => $reward]);
