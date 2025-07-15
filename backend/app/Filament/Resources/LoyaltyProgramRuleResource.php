@@ -13,7 +13,7 @@ use Illuminate\Support\Collection;
 class LoyaltyProgramRuleResource extends Resource
 {
     protected static ?string $model = LoyaltyProgramRule::class;
-    protected static ?string $navigationIcon = 'heroicon-o-gift';
+    protected static ?string $navigationIcon = 'heroicon-o-lock-closed';
     protected static ?string $navigationGroup = 'Loyalty Management';
     protected static ?string $recordTitleAttribute = 'rule_name';
     protected static ?int $navigationSort = 2;
@@ -89,7 +89,7 @@ class LoyaltyProgramRuleResource extends Resource
         return $table->columns([
             Tables\Columns\TextColumn::make('loyaltyProgram.program_name')->label('Program')->searchable()->sortable(),
             Tables\Columns\TextColumn::make('rule_name')->searchable()->sortable(),
-            Tables\Columns\BadgeColumn::make('rule_type')->colors([
+            Tables\Columns\TextColumn::make('rule_type')->badge()->colors([
                 'primary' => 'purchase_based',
                 'success' => 'birthday',
                 'warning' => 'referral_bonus',
