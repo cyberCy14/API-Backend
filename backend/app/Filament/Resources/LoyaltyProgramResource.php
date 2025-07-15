@@ -18,6 +18,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Collection;
+use Filament\Notifications\Notification;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 
 class LoyaltyProgramResource extends Resource
@@ -42,14 +45,14 @@ class LoyaltyProgramResource extends Resource
                 ->required(),
 
                 TextInput::make('program_type')
-                ->default('point_based'),
+                ->default('point based'),
 
                 Select::make('company_id')->relationship('company', 'company_name')->searchable()->required(),
 
                 Toggle::make('is_active')->default(true),
                 DatePicker::make('start_date')->default(now())->required(),
                 DatePicker::make('end_date')->afterOrEqual('start_date')->nullable(),
-                Textarea::make('instruction')->autosize(),
+                Textarea::make('instructions')->autosize(),
             ])->columns(1);
     }
 
@@ -57,20 +60,32 @@ class LoyaltyProgramResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('program_name')
-                
+                TextColumn::make('program_name'),
+                TextColumn::make('program_type'),
+                IconColumn::make('is_active')->boolean(),
+                TextColumn::make('created_at')->date(),
             ])
             ->filters([
                 //
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('duplicate')->icon('heroicon-o-document-duplicate')->color('secondary')
+                    ->action(fn(LoyaltyProgram $record) => static::duplicateRule($record)),
+                Tables\Actions\Action::make('toggle')->icon(fn(LoyaltyProgram $r) => $r->is_active ? 'heroicon-o-pause' : 'heroicon-o-play')
+                    ->color(fn(LoyaltyProgram $r) => $r->is_active ? 'warning' : 'success')
+                    ->label(fn(LoyaltyProgram $r) => $r->is_active ? 'Deactivate' : 'Activate')
+                    ->action(fn(LoyaltyProgram $r) => static::toggleStatus($r)),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
+                Tables\Actions\DeleteBulkAction::make(),
+                Tables\Actions\BulkAction::make('Activate')->icon('heroicon-o-play')->color('success')
+                    ->action(fn(Collection $records) => $records->each->update(['is_active' => true])),
+                Tables\Actions\BulkAction::make('Deactivate')->icon('heroicon-o-pause')->color('warning')
+                    ->action(fn(Collection $records) => $records->each->update(['is_active' => false])),
+            ])
+            ->striped()
+            ->defaultSort('created_at', 'desc');
     }
 
     public static function getRelations(): array
@@ -88,4 +103,28 @@ class LoyaltyProgramResource extends Resource
             'edit' => Pages\EditLoyaltyProgram::route('/{record}/edit'),
         ];
     }
+
+    public static function duplicateRule(LoyaltyProgram $record): void
+    {
+        $copy = $record->replicate(['created_at', 'updated_at']);
+        $copy->rule_name .= ' (Copy)';
+        $copy->is_active = false;
+        $copy->save();
+
+        Notification::make()
+            ->title('Rule duplicated successfully')
+            ->success()
+            ->send();
+    }
+
+    public static function toggleStatus(LoyaltyProgram $record): void
+    {
+        $record->update(['is_active' => !$record->is_active]);
+
+        Notification::make()
+            ->title('Rule status updated')
+            ->success()
+            ->send();
+    }
+
 }
