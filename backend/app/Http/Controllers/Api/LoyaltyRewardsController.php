@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\RewardsResource;
 use App\Models\LoyaltyReward as Rewards;
 use Illuminate\Http\Request;
+
 use Illuminate\Http\Response;
 use App\Models\LoyaltyReward;
 use Illuminate\Support\Facades\Validator;
@@ -37,7 +38,6 @@ class LoyaltyRewardsController extends Controller
     public function store(LoyaltyRewardsRequest $request)
     {
         $reward = Rewards::create($request->validated());
-
 
         if ($reward->fails()) {
             return response()->json($reward->errors(), 422);
