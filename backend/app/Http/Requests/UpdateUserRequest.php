@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Rules\PasswordComplexityRule;
+
 
 class UpdateUserRequest extends FormRequest
 {
@@ -11,12 +13,13 @@ class UpdateUserRequest extends FormRequest
         return [
             'name' => 'sometimes|required|string|max:255',
             'email' => 'sometimes|required|email|unique:users,email,' . $this->user->id,
-            'password' => [
-                'nullable',
-                'string',
-                'min:8',
-                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'
-            ],
+            'password' => ['required', 'string', 'min:8', 'confirmed', new PasswordComplexityRule()],
+            // 'password' => [
+            //     'nullable',
+            //     'string',
+            //     'min:8',
+            //     'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'
+            // ],
         ];
     }
 

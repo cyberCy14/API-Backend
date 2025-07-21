@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\DiscountPercentageRule;
 use Illuminate\Foundation\Http\FormRequest;
 use App\Rules\ValidRewardFields;
 
@@ -26,10 +27,10 @@ class LoyaltyRewardsRequest extends FormRequest
             'loyalty_program_id' => 'required|exists:loyaltyPrograms,id',
             'reward_name' => 'required|string|max:255',
             'reward_type' => ['required', 'string'],
-            new ValidRewardFields($this->all()),
+            new ValidRewardFields(),
             'point_cost' => 'required|numeric|min:0',
             'discount_value' => 'nullable|numeric',
-            'discount_percentage' => 'nullable|numeric',
+            'discount_percentage' => ['nullable','numeric', new DiscountPercentageRule],
             'item_id' => 'required|integer',
             'voucher_code' => 'nullable|string|unique:loyaltyRewards,voucher_code',
             'is_active' => 'boolean',

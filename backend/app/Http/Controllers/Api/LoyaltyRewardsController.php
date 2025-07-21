@@ -8,6 +8,7 @@ use App\Models\LoyaltyReward as Rewards;
 use Illuminate\Http\Request;
 
 use Illuminate\Http\Response;
+use App\Models\LoyaltyReward;
 use Illuminate\Support\Facades\Validator;
 
 use App\Http\Requests\LoyaltyRewardsRequest;
@@ -20,7 +21,7 @@ class LoyaltyRewardsController extends Controller
     public function index()
     {
 
-        $reward = Rewards::get();
+        $reward = LoyaltyReward::get();
 
         if ($reward->count() > 0){
             return RewardsResource::collection($reward);
@@ -37,18 +38,6 @@ class LoyaltyRewardsController extends Controller
     public function store(LoyaltyRewardsRequest $request)
     {
         $reward = Rewards::create($request->validated());
-
-        // $reward = Rewards::create([ 
-        //     'loyalty_program_id' => $request->loyalty_program_id,
-        //     'reward_name' => $request->reward_name,
-        //     'reward_type' => $request->reward_type,
-        //     'point_cost' => $request->point_cost,
-        //     'discount_value' => $request->discount_value,
-        //     'discount_percentage' => $request->discount_percentage,
-        //     'item_id' => $request->item_id,
-        //     'voucher_code' => $request->voucher_code,
-        //     'is_active' => $request->is_active,
-        // ]);
 
         return new RewardsResource($reward);
     }
