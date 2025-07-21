@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('company_user', static function (Blueprint $table){
 
             $table->id();
-            $table->unsignedBigInteger('user_id');
-            $table->unsignedBigInteger('company_id');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->unsignedBigInteger('company_id')->constrained()->onDelete('cascade');
         });
 
         
