@@ -11,13 +11,14 @@ use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Crypt;
+use PHPUnit\Event\TestSuite\Loaded;
 
 use function Pest\Laravel\delete;
 
 class CompanyController extends Controller
 {
     public function index(){
-        $company = Company::get();
+        $company = Company::with('users')->get();
         if($company->count() > 0){
             return CompanyResource::collection($company);
         }
@@ -87,7 +88,6 @@ class CompanyController extends Controller
                     'display_name' => 'required|string|max:255',
                     'company_logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
                     'business_type' => 'required|string|max:255',
-                    'user_id' => 'required|int|',
 
                     'telephone_contact_1' => 'required|string|max:255',
                     'telephone_contact_2' => 'nulable|string|max:255',
@@ -105,7 +105,6 @@ class CompanyController extends Controller
 
                     'business_registration_number' => 'required|string|max:255',
                     'tin_number' => 'required|string|max:255',
-
                 ]);
 
                 if($validate->fails()){
@@ -134,6 +133,8 @@ class CompanyController extends Controller
     }
 
     public function show(Company $company): CompanyResource{
+
+        $company->load('users');
         return new CompanyResource($company);
     }
     public function destroy(Company $company){

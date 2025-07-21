@@ -17,7 +17,6 @@ class Company extends Model
         'display_name',
         'company_logo',
         'business_type',
-        'user_id',
         'telephone_contact_1',
         'telephone_contact_2',
         'email_contact_1',
@@ -39,7 +38,7 @@ class Company extends Model
         'tin_number' => 'encrypted',
     ];
 
-    public function user(): BelongsToMany
+    public function users(): BelongsToMany
     {
         return $this->BelongsToMany(User::class);
     }

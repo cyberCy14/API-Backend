@@ -53,7 +53,7 @@ class User extends Authenticatable
     }
 
     
-    public function company(): BelongsToMany
+    public function companies(): BelongsToMany
     {
         return $this->BelongsToMany(Company::class);
     }
