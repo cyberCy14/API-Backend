@@ -15,7 +15,7 @@ class LoyaltyRewardsController extends Controller // Now, this line will work co
     // List all rewards
     public function index()
     {
-        $reward = LoyaltyReward::get();
+        $reward = LoyaltyReward::with('users')->get();
 
         if ($reward->count() > 0){
             return RewardsResource::collection($reward);
@@ -61,7 +61,7 @@ class LoyaltyRewardsController extends Controller // Now, this line will work co
     // Show a single voucher
     public function show(LoyaltyReward $reward)
     {
-        
+        $reward->load('users'); 
             return new RewardsResource($reward);
 
     }

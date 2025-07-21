@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -18,7 +19,7 @@ class RewardsResource extends JsonResource
 
         return[
             'id' => $this->id,
-            'loyalty_program_id' => $this->loyalty_program_id,
+            'loyalty_program_rule_id' => $this->loyalty_program_rule_id,
             'reward_name' => $this->reward_name,
             'description' => $this->description,
             'reward_type' => $this->reward_type,
@@ -29,7 +30,10 @@ class RewardsResource extends JsonResource
             'voucher_code' => $this->voucher_code,
             'is_active' => $this->is_active,
             'max_redemption_rate' => $this->max_redemption_rate,
-            'expiration_days' => $this->expiration_days
+            'expiration_days' => $this->expiration_days,
+            'users' => UserResource::collection($this->whenLoaded('users')),
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at, 
         ];
         
     }
