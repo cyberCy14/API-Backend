@@ -85,7 +85,7 @@ class CompanyResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('company_name')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('business_type')->sortable(),
-                Tables\Columns\TextColumn::make('user.name')->label('Owner')->sortable(),
+                Tables\Columns\TextColumn::make('users.name')->label('Employees')->sortable(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('business_type')
