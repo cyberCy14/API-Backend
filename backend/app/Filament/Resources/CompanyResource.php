@@ -33,6 +33,12 @@ class CompanyResource extends Resource
                     ->required()
                     ->options(fn() => self::getBusinessTypes()->pluck('name', 'id'))
                     ->searchable(),
+                    Forms\Components\Select::make('user_id')
+                    ->required()
+                    ->multiple()
+                    ->preload()
+                    ->relationship('users', 'name')
+                    ->searchable(),
             ])->columns(2),
 
             Forms\Components\Section::make('Contacts')->schema([
