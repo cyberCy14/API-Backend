@@ -36,6 +36,7 @@ class CompanyResource extends Resource
                 Forms\Components\Select::make('user_id')
                     ->required()
                     ->relationship('user', 'name')
+                    ->preload()
                     ->searchable(),
             ])->columns(2),
 
