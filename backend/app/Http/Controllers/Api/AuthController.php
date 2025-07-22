@@ -55,6 +55,7 @@ class AuthController extends Controller
         ]);
 
         $user = User::where('email',$request->email)->first();
+        $user->load('companies');
 
         if(!Hash::check($request->password, $user->password)){
             return [
@@ -62,7 +63,8 @@ class AuthController extends Controller
             ];
         }
         $token = $user->createToken($user->email);
-        return $token->plainTextToken;
+        // return $token->plainTextToken;
+        return response()->json($user);
     }
 
     public function logout(Request $request){
