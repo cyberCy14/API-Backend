@@ -9,6 +9,7 @@ use App\Models\Company;
 use App\Models\LoyaltyProgram;
 use App\Models\LoyaltyProgramRule;
 use App\Models\LoyaltyReward;
+use App\Models\BusinessType;
 
 class DatabaseSeeder extends Seeder
 {
@@ -17,6 +18,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call([
+            BusinessTypeSeeder::class, // Ensure business types are seeded
+        ]);
+
         // Create test user
         $user = User::factory()->create([
             'name' => 'Test User',
@@ -28,7 +33,14 @@ class DatabaseSeeder extends Seeder
  
         // Create companies
         $companies = Company::factory()->count(3)->create();
- 
+       
+         // Assign random business types to companies
+         foreach ($companies as $company) {
+            $randomBusinessType = BusinessType::inRandomOrder()->first();
+            $company->business_type_id = $randomBusinessType->id;
+            $company->save();
+        }
+        
         // Attach users to companies (many-to-many)
         foreach ($companies as $company) {
             // Attach the test user to all companies

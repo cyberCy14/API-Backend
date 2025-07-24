@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Company;
+use App\Models\BusinessType;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -24,7 +25,10 @@ class CompanyFactory extends Factory
             'company_name' => $this->faker->company,
             'display_name' => $this->faker->companySuffix,
             'company_logo'=> $this->faker->imageUrl(640, 480, 'business', true),
-            'business_type' => $this->faker->randomElement(['Construction', 'Restaurant', 'Manufacturing', 'Retail', 'Agriculture']),
+            'business_type_id' => function () {
+                // Get a random business type, or create one if none exist
+                return BusinessType::inRandomOrder()->first()?->id;
+            },
             'telephone_contact_1' => $this->faker->phoneNumber,
             'email_contact_1' => $this->faker->unique()->safeEmail,
             'barangay' => $this->faker->randomElement(['BALUGO', 'BAGACAY', 'BANILAD', 'BATINGUEL', 'PIAPI', 'CANDAWINONAN', 'DARO', 'CALINDAGAN']),
