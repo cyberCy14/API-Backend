@@ -25,7 +25,7 @@ class RewardsResource extends JsonResource
             'point_cost' => $this->point_cost,
             'discount_value' => $this->discount_value,
             'discount_percentage' => $this->discount_percentage,
-            'item_id' => $this->item_id,
+            // 'item_id' => $this->item_id,
             'voucher_code' => $this->voucher_code,
             'is_active' => $this->is_active,
             'max_redemption_rate' => $this->max_redemption_rate,

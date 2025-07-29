@@ -15,15 +15,18 @@ class LoyaltyRewardsController extends Controller // Now, this line will work co
     // List all rewards
     public function index()
     {
-        $reward = LoyaltyReward::get();
+        $rewards = LoyaltyReward::get();
 
-        if ($reward->count() > 0){
-            return RewardsResource::collection($reward);
-        }
-        else{
-            return response()->json(['message' => 'Empty'], status:200);
-        }
+        // if ($reward->count() > 0){
+        //     return RewardsResource::collection($reward);
+        // }
+        // else{
+        //     return response()->json(['message' => 'Empty'], status:200);
+        // }
         
+        return response()->json([
+            'data' => RewardsResource::collection($rewards)
+        ], 200);
         
     }
 
@@ -38,7 +41,7 @@ class LoyaltyRewardsController extends Controller // Now, this line will work co
             'discount_value' => 'nullable|numeric',
             'discount_percentage' => 'nullable|numeric',
             'item_id' => 'required|integer',
-            'voucher_code' => 'nullable|string|unique:loyaltyRewards,voucher_code',
+            'voucher_code' => 'nullable|string|unique:loyalty_rewards,voucher_code',
             'is_active' => 'boolean',
             'max_redemption_rate' => 'nullable|integer',
             'expiration_days' => 'nullable|integer'

@@ -15,11 +15,9 @@ return new class extends Migration
             // Primary key
             $table->id();
 
-            // // Foreign key to loyalty_programs (optional)
-            // $table->foreignId('loyalty_program_id')
-            //     ->nullable()
-            //     ->constrained('loyalty_programs')
-            //     ->nullOnDelete();
+            $table->foreignId('user_id')
+                ->constrained('users')
+                ->onDelete('cascade');
 
             $table->foreignId('program_rules_id')
                 ->nullable()

@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\LoyaltyRuleController;
 use App\Http\Controllers\Api\LoyaltyRewardsController;
 use App\Http\Controllers\Api\LoyaltyTransactionController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\RecentActivityController;
 
 
 // Public authentication routes
@@ -43,6 +44,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('loyalty-rules', LoyaltyRuleController::class);
     Route::apiResource('loyalty-programs', LoyaltyRuleController::class);
     Route::apiResource('loyalty-transaction', LoyaltyTransactionController::class);
+    Route::apiResource('recent-activities', RecentActivityController::class);
 
 
     Route::post('logout', [AuthController::class, 'logout']);
