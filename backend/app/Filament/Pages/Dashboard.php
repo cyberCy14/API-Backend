@@ -7,10 +7,18 @@ use App\Filament\Widgets\UserRegistrationsChart;
 
 class Dashboard extends BaseDashboard
 {
-    protected function getHeaderWidgets(): array
-    {
-        return [
-            // UserRegistrationsChart::class,
-        ];
-    }
+    /**
+     * Get the widgets that should be displayed on the dashboard.
+     *
+     * @return array
+     */
+    protected static ?string $navigationIcon = 'heroicon-o-home';
+    protected static string $view = 'filament.pages.dashboard';
+
+    // protected function getHeaderWidgets(): array
+    // {
+    //     // return [
+    //     //     \App\Filament\Widgets\LoyaltyOverview::class,
+    //     // ];
+    // }
 }

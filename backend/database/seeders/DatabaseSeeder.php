@@ -30,7 +30,7 @@ class DatabaseSeeder extends Seeder
  
         // Create additional users
         $otherUsers = User::factory()->count(5)->create();
- 
+        
         // Create companies
         $companies = Company::factory()->count(3)->create();
        
