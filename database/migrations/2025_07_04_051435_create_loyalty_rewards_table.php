@@ -24,6 +24,11 @@ return new class extends Migration
                 ->constrained('loyalty_program_rules')
                 ->nullOnDelete();
 
+            $table->foreignId('company_id')
+                ->constrained('companies')
+                ->onDelete('cascade');
+            
+
             // Reward details
             $table->string('reward_name', 255);
             $table->text('description')->nullable();
