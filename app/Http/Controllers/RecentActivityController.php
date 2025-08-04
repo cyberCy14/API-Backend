@@ -2,17 +2,24 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\RecentActivityCreated;
 use App\Models\RecentActivity;
 use Illuminate\Http\Request;
 
 class RecentActivityController extends Controller
 {
     public function index(Request $request){
-        $activities = RecentActivity::where('user_id', $request->user()->id)
-        ->orderBy('created_at', 'desc')
-        ->get();
+          $user = $request->user();
 
-    return response()->json(['data' => $activities]);
+        $activities = RecentActivity::where('user_id', $user->id) 
+                                    ->orderBy('created_at', 'desc') 
+                                    ->limit(10) 
+                                    ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $activities,
+        ]);
     }
 
     public function store(Request $request){
@@ -28,6 +35,8 @@ class RecentActivityController extends Controller
             'points' => $validated['points'],
             'description' => $validated['description'] ?? null,
         ]);
+
+        broadcast(new RecentActivityCreated($activity));
 
         return response()->json(['data' => $activity], 201);
     }

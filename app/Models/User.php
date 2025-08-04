@@ -30,6 +30,8 @@ class User extends Authenticatable
         'image',
     ];
 
+    protected $appends = ['total_points', 'invite_code'];
+
     /**
      * The attributes that should be hidden for serialization.
      *
@@ -63,5 +65,18 @@ class User extends Authenticatable
             ->take(2)
             ->map(fn ($word) => Str::substr($word, 0, 1))
             ->implode('');
+    }
+
+    public function loyaltyAccounts(){
+        return $this->hasMany(LoyaltyAccount::class);
+    }
+
+    public function getTotalPointsAttribute(){
+        return $this->loyaltyAccounts()->sum('points');
+    }
+
+    public function getInviteCodeAttribute(){
+        return strtoupper(substr($this->name, 0, 4)) . $this->id;
+        //this adds the username and the user id to make invitecode
     }
 }

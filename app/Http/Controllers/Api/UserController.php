@@ -46,4 +46,16 @@ class UserController extends Controller
 
         return response()->json(['user' => $user, 'message' => 'Profile updated successfully']);
     }
+
+
+    public function getLoyaltyInfo(Request $request){
+        $user = $request->user();
+
+        return response()->json([
+            'total_points' => $user->total_points,
+            'next_reward_threshold' => 1000, //this should depend on the rules
+            'invite_code' => $user->invite_code,
+        ]);
+    }
+
 } 

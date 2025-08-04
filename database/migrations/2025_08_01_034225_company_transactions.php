@@ -21,7 +21,7 @@ return new class extends Migration
 
             $table->enum('transaction_type', ['earn', 'redeem'])->default('earn');
             $table->string('description');
-            $table->integer('points');
+            $table->integer('poi    nts');
             $table->date('transaction_date')->index();
 
             //this will determine where or how the points/rewards/transactions came from
