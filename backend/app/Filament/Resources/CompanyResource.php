@@ -5,7 +5,15 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\CompanyResource\Pages;
 use App\Helpers\GetLocationDataHelper;
 use App\Models\Company;
+use Exception;
 use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Support\Enums\FontWeight;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Illuminate\Support\Collection;
@@ -16,11 +24,13 @@ class CompanyResource extends Resource
 {
     protected static ?string $model = Company::class;
     protected static ?string $navigationIcon = 'heroicon-o-building-office';
-    protected static ?string $navigationGroup = 'Management';
-    protected static ?string $label = 'Company';
+    protected static ?string $navigationGroup = 'Company Management';
+    protected static ?string $navigationLabel = 'Companies';
+    protected static ?int $navigationSort = 1;
+  
 
     public static function form(Forms\Form $form): Forms\Form
-    {
+    {   
         return $form->schema([
             Forms\Components\Section::make('Company Details')->schema([
                 Forms\Components\TextInput::make('company_name')->required()->maxLength(255),
