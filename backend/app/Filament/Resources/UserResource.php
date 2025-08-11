@@ -10,17 +10,19 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Hash;
-
+use Spatie\Permission\Traits\HasRoles;
 
 class UserResource extends Resource
 {
+    use HasRoles;
     protected static ?string $model = User::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-users';
-
+    
     public static function form(Form $form): Form
     {
         return $form
@@ -63,6 +65,7 @@ class UserResource extends Resource
                 //
             ])
             ->bulkActions([
+                
                 Tables\Actions\DeleteBulkAction::make(),
             ]);
     }
@@ -73,6 +76,7 @@ class UserResource extends Resource
             'index' => Pages\ListUsers::route('/'),
             'create' => Pages\CreateUser::route('/create'),
             'edit' => Pages\EditUser::route('/{record}/edit'),
+            'view' => Pages\ViewUser::route('/{record}'),
         ];
     }
 }
