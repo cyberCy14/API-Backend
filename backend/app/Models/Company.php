@@ -62,7 +62,7 @@ class Company extends Model
                 'unique:companies,tin_number',
                 'regex:/^\d{9,12}$/'
             ],
-            // ...other rules
+            
         ];
     }
 

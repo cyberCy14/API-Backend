@@ -60,7 +60,6 @@ class PointCalculator extends Page implements HasForms
             'company_id' => $firstCompanyId,
             'search_company_id' => $firstCompanyId,
             'redeem_company_id' => $firstCompanyId,
-            'calculator_tabs' => 'earn_points', 
         ]);
     }
 
@@ -69,6 +68,7 @@ class PointCalculator extends Page implements HasForms
         return $form
             ->schema([
                 Tabs::make('calculator_tabs')
+                    ->activeTab(1)
                     ->tabs([
                         Tabs\Tab::make('earn_points')
                             ->label('Earn Points')
@@ -79,7 +79,7 @@ class PointCalculator extends Page implements HasForms
                                         Select::make('company_id')
                                             ->label('Company')
                                             ->options(Company::where('is_active', true)->pluck('company_name', 'id'))
-                                            ->required(fn (Get $get) => ($get('calculator_tabs') ?? 'earn_points') === 'earn_points') // Conditional required
+                                            ->required()
                                             ->live()
                                             ->afterStateUpdated(function ($state, callable $set) {
                                                 $set('loyalty_program_id', null);
@@ -93,13 +93,13 @@ class PointCalculator extends Page implements HasForms
                                                 if (!$companyId) return [];
 
                                                 return LoyaltyProgram::where('company_id', $companyId)
-                                                    ->whereHas('rules', function($query) { // Changed to 'rules'
+                                                    ->whereHas('rules', function($query) {
                                                         $query->where('is_active', true);
                                                     })
                                                     ->where('is_active', true)
                                                     ->pluck('program_name', 'id');
                                             })
-                                            ->required(fn (Get $get) => ($get('calculator_tabs') ?? 'earn_points') === 'earn_points') // Conditional required
+                                            ->required()
                                             ->live()
                                             ->afterStateUpdated(function () {
                                                 $this->resetCalculation();
@@ -117,7 +117,7 @@ class PointCalculator extends Page implements HasForms
                                             ->numeric()
                                             ->minValue(0.01)
                                             ->step(0.01)
-                                            ->required(fn (Get $get) => ($get('calculator_tabs') ?? 'earn_points') === 'earn_points') // Conditional required
+                                            ->required()
                                             ->live(onBlur: true)
                                             ->afterStateUpdated(function () {
                                                 $this->resetCalculation();
@@ -126,7 +126,7 @@ class PointCalculator extends Page implements HasForms
                                         TextInput::make('customer_email')
                                             ->label('Customer Email')
                                             ->email()
-                                            ->required(fn (Get $get) => ($get('calculator_tabs') ?? 'earn_points') === 'earn_points') // Conditional required
+                                            ->required()
                                             ->helperText('Points will be credited to this customer')
                                             ->live(onBlur: true)
                                             ->afterStateUpdated(function () {
@@ -153,13 +153,37 @@ class PointCalculator extends Page implements HasForms
 
                                                 $breakdown = '';
                                                 foreach ($this->ruleBreakdown as $rule) {
-                                                    $breakdown .= "• {$rule['rule_name']}: {$rule['points']} points";
+                                                    $breakdown .= "• {$rule['rule_name']}: {$rule['points']} points<br>";
                                                 }
                                                 return $breakdown ?: 'No applicable rules found';
                                             }),
                                     ])
                                     ->columns(2)
                                     ->visible(fn (): bool => !empty($this->calculatedPoints)),
+
+                                Actions::make([
+                                    Action::make('calculate')
+                                        ->label('Calculate Points')
+                                        ->icon('heroicon-o-calculator')
+                                        ->color('primary')
+                                        ->action('calculatePoints')
+                                        ->disabled(function (Get $get): bool {
+                                            return empty($get('company_id')) ||
+                                                   empty($get('loyalty_program_id')) ||
+                                                   empty($get('purchase_amount')) ||
+                                                   empty($get('customer_email'));
+                                        }),
+
+                                    Action::make('generate_qr')
+                                        ->label('Generate QR Code & Credit Points')
+                                        ->icon('heroicon-o-qr-code')
+                                        ->color('success')
+                                        ->action('generateQrAndCreditPoints')
+                                        ->visible(fn (): bool => !empty($this->calculatedPoints))
+                                        ->requiresConfirmation()
+                                        ->modalHeading('Credit Points to Customer')
+                                        ->modalDescription('This will generate a QR code. Scanning it will credit the points to the customer account.'),
+                                ])->alignEnd(),
                             ]),
 
                         Tabs\Tab::make('customer_lookup')
@@ -171,13 +195,13 @@ class PointCalculator extends Page implements HasForms
                                         Select::make('search_company_id')
                                             ->label('Company')
                                             ->options(Company::where('is_active', true)->pluck('company_name', 'id'))
-                                            ->required(fn (Get $get) => ($get('calculator_tabs') ?? 'earn_points') === 'customer_lookup') // Conditional required
+                                            ->required()
                                             ->live(),
 
                                         TextInput::make('search_customer_email')
                                             ->label('Customer Email')
                                             ->email()
-                                            ->required(fn (Get $get) => ($get('calculator_tabs') ?? 'earn_points') === 'customer_lookup') // Conditional required
+                                            ->required()
                                             ->helperText('Enter customer email to view their points balance'),
                                     ])
                                     ->columns(2),
@@ -201,6 +225,18 @@ class PointCalculator extends Page implements HasForms
                                     ])
                                     ->columns(2)
                                     ->visible(fn (): bool => $this->customerBalance !== null),
+
+                                Actions::make([
+                                    Action::make('search_customer')
+                                        ->label('Search Customer')
+                                        ->icon('heroicon-o-magnifying-glass')
+                                        ->color('info')
+                                        ->action('searchCustomer')
+                                        ->disabled(function (Get $get): bool {
+                                            return empty($get('search_company_id')) ||
+                                                   empty($get('search_customer_email'));
+                                        }),
+                                ])->alignEnd(),
                             ]),
 
                         Tabs\Tab::make('redeem_points')
@@ -212,84 +248,49 @@ class PointCalculator extends Page implements HasForms
                                         Select::make('redeem_company_id')
                                             ->label('Company')
                                             ->options(Company::where('is_active', true)->pluck('company_name', 'id'))
-                                            ->required(fn (Get $get) => ($get('calculator_tabs') ?? 'earn_points') === 'redeem_points') // Conditional required
+                                            ->required()
                                             ->live(),
 
                                         TextInput::make('redeem_customer_email')
                                             ->label('Customer Email')
                                             ->email()
-                                            ->required(fn (Get $get) => ($get('calculator_tabs') ?? 'earn_points') === 'redeem_points'), // Conditional required
+                                            ->required(),
 
                                         TextInput::make('redeem_points')
                                             ->label('Points to Redeem')
                                             ->numeric()
                                             ->minValue(1)
-                                            ->required(fn (Get $get) => ($get('calculator_tabs') ?? 'earn_points') === 'redeem_points') // Conditional required
+                                            ->required()
                                             ->suffix('points')
                                             ->helperText('Enter the number of points to redeem'),
 
                                         Textarea::make('redemption_description')
                                             ->label('Redemption Description')
                                             ->placeholder('e.g., Free coffee, 10% discount, etc.')
-                                            ->required(fn (Get $get) => ($get('calculator_tabs') ?? 'earn_points') === 'redeem_points') // Conditional required
+                                            ->required()
                                             ->helperText('Describe what the customer is redeeming'),
                                     ])
                                     ->columns(2),
+
+                                Actions::make([
+                                    Action::make('generate_redemption_qr')
+                                        ->label('Generate Redemption QR')
+                                        ->icon('heroicon-o-qr-code')
+                                        ->color('warning')
+                                        ->action('generateRedemptionQr')
+                                        ->disabled(function (Get $get): bool {
+                                            return empty($get('redeem_company_id')) ||
+                                                   empty($get('redeem_customer_email')) ||
+                                                   empty($get('redeem_points')) ||
+                                                   empty($get('redemption_description'));
+                                        })
+                                        ->requiresConfirmation()
+                                        ->modalHeading('Generate Redemption QR')
+                                        ->modalDescription('This will generate a QR code. Scanning it will confirm the point redemption.'),
+                                ])->alignEnd(),
                             ]),
                     ])
                     ->live(),
-
-                Actions::make([
-                    Action::make('calculate')
-                        ->label('Calculate Points')
-                        ->icon('heroicon-o-calculator')
-                        ->color('primary')
-                        ->action('calculatePoints')
-                        ->visible(fn (Get $get): bool => ($get('calculator_tabs') ?? 'earn_points') === 'earn_points')
-                        ->disabled(function (Get $get): bool {
-                            return empty($get('company_id')) ||
-                                   empty($get('loyalty_program_id')) ||
-                                   empty($get('purchase_amount')) ||
-                                   empty($get('customer_email'));
-                        }),
-
-                    Action::make('generate_qr')
-                        ->label('Generate QR Code & Credit Points')
-                        ->icon('heroicon-o-qr-code')
-                        ->color('success')
-                        ->action('generateQrAndCreditPoints')
-                        ->visible(fn (Get $get): bool => !empty($this->calculatedPoints) && ($get('calculator_tabs') ?? 'earn_points') === 'earn_points')
-                        ->requiresConfirmation()
-                        ->modalHeading('Credit Points to Customer')
-                        ->modalDescription('This will generate a QR code. Scanning it will credit the points to the customer account.'),
-
-                    Action::make('search_customer')
-                        ->label('Search Customer')
-                        ->icon('heroicon-o-magnifying-glass')
-                        ->color('info')
-                        ->action('searchCustomer')
-                        ->visible(fn (Get $get): bool => ($get('calculator_tabs') ?? 'earn_points') === 'customer_lookup')
-                        ->disabled(function (Get $get): bool {
-                            return empty($get('search_company_id')) ||
-                                   empty($get('search_customer_email'));
-                        }),
-
-                    Action::make('generate_redemption_qr')
-                        ->label('Generate Redemption QR')
-                        ->icon('heroicon-o-qr-code')
-                        ->color('warning')
-                        ->action('generateRedemptionQr')
-                        ->visible(fn (Get $get): bool => ($get('calculator_tabs') ?? 'earn_points') === 'redeem_points')
-                        ->disabled(function (Get $get): bool {
-                            return empty($get('redeem_company_id')) ||
-                                   empty($get('redeem_customer_email')) ||
-                                   empty($get('redeem_points')) ||
-                                   empty($get('redemption_description'));
-                        })
-                        ->requiresConfirmation()
-                        ->modalHeading('Generate Redemption QR')
-                        ->modalDescription('This will generate a QR code. Scanning it will confirm the point redemption.'),
-                ])->alignEnd(),
             ])
             ->statePath('data');
     }
@@ -322,7 +323,7 @@ class PointCalculator extends Page implements HasForms
             $totalPoints = 0;
             $breakdown = [];
 
-            $rules = $loyaltyProgram->rules()
+            $rules = $loyaltyProgram->rules() // Changed to 'rules'
                 ->where('is_active', true)
                 ->where(function ($query) {
                     $query->whereNull('active_from_date')
@@ -373,7 +374,6 @@ class PointCalculator extends Page implements HasForms
 
             $this->calculatedPoints = number_format($totalPoints) . ' points';
             $this->ruleBreakdown = $breakdown;
-            $this->data['calculator_tabs'] = 'earn_points'; // Ensure tab stays active
 
             Log::info('Points calculated', ['total' => $totalPoints, 'breakdown' => $breakdown]);
 
@@ -553,11 +553,11 @@ class PointCalculator extends Page implements HasForms
                 'customer_email' => $customerEmail,
                 'company_id' => $companyId,
                 'loyalty_program_id' => null,
-                'points_earned' => -$redeemPoints,
+                'points_earned' => -$redeemPoints, // Negative value for redemptions
                 'purchase_amount' => null,
                 'transaction_id' => $transactionId,
                 'transaction_type' => 'redemption',
-                'status' => 'pending',
+                'status' => 'pending', // Keep as pending until webhook confirms
                 'redemption_description' => $this->data['redemption_description'],
             ]);
 
@@ -570,7 +570,7 @@ class PointCalculator extends Page implements HasForms
                 ->size(300)
                 ->margin(2)
                 ->errorCorrection('M')
-                ->generate($webhookUrl);
+                ->generate($webhookUrl); // QR code now contains the webhook URL
 
             $qrFileName = 'qr-codes/' . $transactionId . '.png';
 

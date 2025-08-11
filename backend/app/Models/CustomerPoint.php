@@ -17,7 +17,6 @@ class CustomerPoint extends Model
         'loyalty_program_id',
         'transaction_id',
         'points_earned',
-        'points_redeemed',
         'purchase_amount',
         'transaction_type',
         'status',
@@ -74,21 +73,12 @@ class CustomerPoint extends Model
     }
 
     public static function getCustomerBalance(string $email, int $companyId): int
-    {
-        $earned = self::forCustomer($email)
-            ->forCompany($companyId)
-            ->credited()
-            ->earnings()
-            ->sum('points_earned');
-
-        $redeemed = self::forCustomer($email)
-            ->forCompany($companyId)
-            ->credited()
-            ->redemptions()
-            ->sum('points_redeemed');
-            
-        return $earned + $redeemed;
-    }
+{
+    return self::forCustomer($email)
+        ->forCompany($companyId)
+        ->credited()
+        ->sum('points_earned');
+}
 
     public static function getCustomerTransactionHistory(string $email, int $companyId)
     {
@@ -110,12 +100,12 @@ class CustomerPoint extends Model
 
     // Redeem points (change status from pending to redeemed)
     public function redeemPoints(): bool
-    {
-        if ($this->status === 'pending' && $this->transaction_type === 'redemption') {
-            $this->update(['status' => 'redeemed']);
-            return true;
-        }
-        return false;
+{
+    if ($this->status === 'pending' && $this->transaction_type === 'redemption') {
+        $this->update(['status' => 'credited']); // Use 'credited' status for both earnings and redemptions
+        return true;
     }
+    return false;
+}
     
 }
