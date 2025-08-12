@@ -41,10 +41,12 @@ class Company extends Model
         'tin_number' => 'encrypted',
     ];
 
+    // In your Company model
     public function users(): BelongsToMany
     {
-        return $this->BelongsToMany(User::class);
+    return $this->belongsToMany(User::class, 'company_user')->withTimestamps();
     }
+
     public static function rules(): array
     {
         return [

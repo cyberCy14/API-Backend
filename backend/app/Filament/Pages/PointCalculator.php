@@ -24,10 +24,15 @@ use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Testing\Fluent\Concerns\Has;
+use App\Traits\HasRoleHelpers;
 
 class PointCalculator extends Page implements HasForms
 {
     use InteractsWithForms;
+    use HasRoleHelpers;
 
     protected static ?string $navigationIcon = 'heroicon-o-calculator';
 
@@ -53,18 +58,98 @@ class PointCalculator extends Page implements HasForms
 
     public function mount(): void
     {
-        // Pre-fill with the first active company if available
-        $firstCompanyId = Company::where('is_active', true)->first()?->id;
+        $user = Auth::user();
+        $availableCompanies = $this->getAvailableCompanies();
+        
+        // Pre-fill with appropriate company based on user role
+        $defaultCompanyId = null;
+        
+        if ($this->isSuperAdmin($user)) {
+            // For superadmin, use first available company
+            $defaultCompanyId = $availableCompanies->first()?->id;
+        } elseif ($this->isHandler($user)) {
+            // For handler, use their first company
+            $defaultCompanyId = $user->companies->first()?->id;
+        }
 
         $this->form->fill([
-            'company_id' => $firstCompanyId,
-            'search_company_id' => $firstCompanyId,
-            'redeem_company_id' => $firstCompanyId,
+            'company_id' => $defaultCompanyId,
+            'search_company_id' => $defaultCompanyId,
+            'redeem_company_id' => $defaultCompanyId,
         ]);
+    }
+
+    /**
+     * Check if user is a superadmin
+     */
+    private function isSuperAdmin($user = null): bool
+    {
+        $user = $user ?: Auth::user();
+        return $user && $user->roles()->where('name', 'superadmin')->exists();
+    }
+
+    /**
+     * Check if user is a handler
+     */
+    private function isHandler($user = null): bool
+    {
+        $user = $user ?: Auth::user();
+        return $user && $user->roles()->where('name', 'handler')->exists();
+    }
+
+    /**
+     * Get companies available to the current user based on their role
+     */
+    private function getAvailableCompanies()
+    {
+        $user = Auth::user();
+        
+        if ($this->isSuperAdmin($user)) {
+            // Superadmin can see all active companies
+            return Company::where('is_active', true)->get();
+        }
+        
+        if ($this->isHandler($user)) {
+            // Handler can only see their assigned companies
+            return $user->companies()->where('is_active', true)->get();
+        }
+        
+        // Default: no companies for unrecognized roles
+        return collect();
+    }
+
+    /**
+     * Get company options for select fields based on user permissions
+     */
+    private function getCompanyOptions()
+    {
+        return $this->getAvailableCompanies()->pluck('company_name', 'id')->toArray();
+    }
+
+    /**
+     * Check if user can access a specific company
+     */
+    private function canAccessCompany($companyId): bool
+    {
+        $user = Auth::user();
+        
+        if ($this->isSuperAdmin($user)) {
+            return true;
+        }
+        
+        if ($this->isHandler($user)) {
+            return $user->companies()->where('companies.id', $companyId)->exists();
+        }
+        
+        return false;
     }
 
     public function form(Form $form): Form
     {
+        $user = Auth::user();
+        $companyOptions = $this->getCompanyOptions();
+        $isHandler = $this->isHandler($user);
+        
         return $form
             ->schema([
                 Tabs::make('calculator_tabs')
@@ -78,10 +163,23 @@ class PointCalculator extends Page implements HasForms
                                     ->schema([
                                         Select::make('company_id')
                                             ->label('Company')
-                                            ->options(Company::where('is_active', true)->pluck('company_name', 'id'))
+                                            ->options($companyOptions)
                                             ->required()
                                             ->live()
+                                            ->disabled($isHandler && count($companyOptions) === 1) // Disable if handler has only one company
+                                            ->helperText($isHandler ? 'You can only manage loyalty programs for your assigned companies' : null)
                                             ->afterStateUpdated(function ($state, callable $set) {
+                                                // Validate access to selected company
+                                                if ($state && !$this->canAccessCompany($state)) {
+                                                    Notification::make()
+                                                        ->title('Access Denied')
+                                                        ->body('You do not have access to this company')
+                                                        ->danger()
+                                                        ->send();
+                                                    $set('company_id', null);
+                                                    return;
+                                                }
+                                                
                                                 $set('loyalty_program_id', null);
                                                 $this->resetCalculation();
                                             }),
@@ -90,7 +188,9 @@ class PointCalculator extends Page implements HasForms
                                             ->label('Loyalty Program')
                                             ->options(function (Get $get) {
                                                 $companyId = $get('company_id');
-                                                if (!$companyId) return [];
+                                                if (!$companyId || !$this->canAccessCompany($companyId)) {
+                                                    return [];
+                                                }
 
                                                 return LoyaltyProgram::where('company_id', $companyId)
                                                     ->whereHas('rules', function($query) {
@@ -153,7 +253,7 @@ class PointCalculator extends Page implements HasForms
 
                                                 $breakdown = '';
                                                 foreach ($this->ruleBreakdown as $rule) {
-                                                    $breakdown .= "• {$rule['rule_name']}: {$rule['points']} points<br>";
+                                                    $breakdown .= "• {$rule['rule_name']}: {$rule['points']} points\n";
                                                 }
                                                 return $breakdown ?: 'No applicable rules found';
                                             }),
@@ -194,9 +294,25 @@ class PointCalculator extends Page implements HasForms
                                     ->schema([
                                         Select::make('search_company_id')
                                             ->label('Company')
-                                            ->options(Company::where('is_active', true)->pluck('company_name', 'id'))
+                                            ->options($companyOptions)
                                             ->required()
-                                            ->live(),
+                                            ->disabled($isHandler && count($companyOptions) === 1)
+                                            ->helperText($isHandler ? 'You can only search customers from your assigned companies' : null)
+                                            ->live()
+                                            ->afterStateUpdated(function ($state) {
+                                                // Validate access to selected company
+                                                if ($state && !$this->canAccessCompany($state)) {
+                                                    Notification::make()
+                                                        ->title('Access Denied')
+                                                        ->body('You do not have access to this company')
+                                                        ->danger()
+                                                        ->send();
+                                                }
+                                                
+                                                // Reset customer data when company changes
+                                                $this->customerBalance = null;
+                                                $this->customerTransactions = [];
+                                            }),
 
                                         TextInput::make('search_customer_email')
                                             ->label('Customer Email')
@@ -247,9 +363,24 @@ class PointCalculator extends Page implements HasForms
                                     ->schema([
                                         Select::make('redeem_company_id')
                                             ->label('Company')
-                                            ->options(Company::where('is_active', true)->pluck('company_name', 'id'))
+                                            ->options($companyOptions)
                                             ->required()
-                                            ->live(),
+                                            ->disabled($isHandler && count($companyOptions) === 1)
+                                            ->helperText($isHandler ? 'You can only redeem points for your assigned companies' : null)
+                                            ->live()
+                                            ->afterStateUpdated(function ($state) {
+                                                // Validate access to selected company
+                                                if ($state && !$this->canAccessCompany($state)) {
+                                                    Notification::make()
+                                                        ->title('Access Denied')
+                                                        ->body('You do not have access to this company')
+                                                        ->danger()
+                                                        ->send();
+                                                }
+                                                
+                                                // Reset redemption QR path when company changes
+                                                $this->redemptionQrPath = null;
+                                            }),
 
                                         TextInput::make('redeem_customer_email')
                                             ->label('Customer Email')
@@ -306,15 +437,28 @@ class PointCalculator extends Page implements HasForms
                 'data.customer_email' => 'required|email',
             ]);
 
+            // Additional security check
+            if (!$this->canAccessCompany($this->data['company_id'])) {
+                Notification::make()
+                    ->title('Access Denied')
+                    ->body('You do not have access to this company')
+                    ->danger()
+                    ->send();
+                return;
+            }
+
             Log::info('Calculating points', $this->data);
 
-            $loyaltyProgram = LoyaltyProgram::find($this->data['loyalty_program_id']);
+            $loyaltyProgram = LoyaltyProgram::where('id', $this->data['loyalty_program_id'])
+                ->where('company_id', $this->data['company_id']) // Additional security check
+                ->first();
+            
             $purchaseAmount = (float) $this->data['purchase_amount'];
 
             if (!$loyaltyProgram) {
                 Notification::make()
                     ->title('Error')
-                    ->body('Loyalty program not found')
+                    ->body('Loyalty program not found or access denied')
                     ->danger()
                     ->send();
                 return;
@@ -323,7 +467,7 @@ class PointCalculator extends Page implements HasForms
             $totalPoints = 0;
             $breakdown = [];
 
-            $rules = $loyaltyProgram->rules() // Changed to 'rules'
+            $rules = $loyaltyProgram->rules()
                 ->where('is_active', true)
                 ->where(function ($query) {
                     $query->whereNull('active_from_date')
@@ -356,7 +500,7 @@ class PointCalculator extends Page implements HasForms
                         break;
 
                     case 'milestone':
-                        if ($purchaseAmount >= 1000) {
+                        if ($purchaseAmount >= ($rule->milestone_amount ?? 1000)) {
                             $rulePoints = $rule->points_earned;
                         }
                         break;
@@ -408,6 +552,16 @@ class PointCalculator extends Page implements HasForms
                 'data.customer_email' => 'required|email',
             ]);
 
+            // Additional security check
+            if (!$this->canAccessCompany($this->data['company_id'])) {
+                Notification::make()
+                    ->title('Access Denied')
+                    ->body('You do not have access to this company')
+                    ->danger()
+                    ->send();
+                return;
+            }
+
             Log::info('Generating QR code for earning', $this->data);
 
             if (empty($this->calculatedPoints)) {
@@ -430,8 +584,9 @@ class PointCalculator extends Page implements HasForms
                 'purchase_amount' => $this->data['purchase_amount'],
                 'transaction_id' => $transactionId,
                 'transaction_type' => 'earning',
-                'status' => 'pending', // Keep as pending until webhook confirms
+                'status' => 'pending',
                 'rule_breakdown' => json_encode($this->ruleBreakdown),
+                'created_by' => Auth::id(), // Track who created this transaction
             ]);
 
             Log::info('Customer point record created (pending)', ['id' => $customerPoint->id, 'transaction_id' => $transactionId]);
@@ -443,7 +598,7 @@ class PointCalculator extends Page implements HasForms
                 ->size(300)
                 ->margin(2)
                 ->errorCorrection('M')
-                ->generate($webhookUrl); // QR code now contains the webhook URL
+                ->generate($webhookUrl);
 
             $qrFileName = 'qr-codes/' . $transactionId . '.png';
 
@@ -495,6 +650,16 @@ class PointCalculator extends Page implements HasForms
                 'data.search_customer_email' => 'required|email',
             ]);
 
+            // Additional security check
+            if (!$this->canAccessCompany($this->data['search_company_id'])) {
+                Notification::make()
+                    ->title('Access Denied')
+                    ->body('You do not have access to this company')
+                    ->danger()
+                    ->send();
+                return;
+            }
+
             $companyId = $this->data['search_company_id'];
             $customerEmail = $this->data['search_customer_email'];
 
@@ -532,6 +697,16 @@ class PointCalculator extends Page implements HasForms
                 'data.redemption_description' => 'required',
             ]);
 
+            // Additional security check
+            if (!$this->canAccessCompany($this->data['redeem_company_id'])) {
+                Notification::make()
+                    ->title('Access Denied')
+                    ->body('You do not have access to this company')
+                    ->danger()
+                    ->send();
+                return;
+            }
+
             $companyId = $this->data['redeem_company_id'];
             $customerEmail = $this->data['redeem_customer_email'];
             $redeemPoints = (int) $this->data['redeem_points'];
@@ -553,12 +728,13 @@ class PointCalculator extends Page implements HasForms
                 'customer_email' => $customerEmail,
                 'company_id' => $companyId,
                 'loyalty_program_id' => null,
-                'points_earned' => -$redeemPoints, // Negative value for redemptions
+                'points_earned' => -$redeemPoints,
                 'purchase_amount' => null,
                 'transaction_id' => $transactionId,
                 'transaction_type' => 'redemption',
-                'status' => 'pending', // Keep as pending until webhook confirms
+                'status' => 'pending',
                 'redemption_description' => $this->data['redemption_description'],
+                'created_by' => Auth::id(), // Track who created this transaction
             ]);
 
             Log::info('Redemption record created (pending)', ['id' => $redemptionTransaction->id, 'transaction_id' => $transactionId]);
@@ -570,7 +746,7 @@ class PointCalculator extends Page implements HasForms
                 ->size(300)
                 ->margin(2)
                 ->errorCorrection('M')
-                ->generate($webhookUrl); // QR code now contains the webhook URL
+                ->generate($webhookUrl);
 
             $qrFileName = 'qr-codes/' . $transactionId . '.png';
 
@@ -617,5 +793,16 @@ class PointCalculator extends Page implements HasForms
         $this->calculatedPoints = null;
         $this->qrCodePath = null;
         $this->ruleBreakdown = [];
+    }
+
+    /**
+     * Check if the current user can view this page
+     */
+    public static function canAccess(): bool
+    {
+        $user = Auth::user();
+        if (!$user) return false;
+        
+        return $user->roles()->whereIn('name', ['superadmin', 'handler'])->exists();
     }
 }
