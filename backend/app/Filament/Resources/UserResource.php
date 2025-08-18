@@ -60,6 +60,9 @@ class UserResource extends Resource
     public static function canCreate(): bool
     {
         $user = Auth::user();
+        if ($user->hasRole('handler')) {
+            return false; // Handlers cannot create users
+        }
         return $user && ($user->hasRole('superadmin') || $user->hasRole('handler'));
     }
 

@@ -23,6 +23,10 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use App\Traits\HasRoleHelpers;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\ImageEditor;
+use Filament\Tables\Columns\BadgeColumn;
+
 class CompanyResource extends Resource
 {
     use HasRoleHelpers; 
@@ -40,7 +44,7 @@ class CompanyResource extends Resource
         $query = parent::getEloquentQuery();
         
         // If user is superadmin, show all companies
-        if ($user->hasRole('superadmin')) {
+        if ($user->hasRole('super_admin')) {
             return $query;
         }
         
@@ -61,7 +65,7 @@ class CompanyResource extends Resource
     public static function canCreate(): bool
     {
         $user = Auth::user();
-        return $user && $user->hasRole('superadmin'); // Only superadmin can create companies
+        return $user && $user->hasRole('super_admin'); // Only superadmin can create companies
     }
 
     /**
@@ -74,7 +78,7 @@ class CompanyResource extends Resource
         if (!$user) return false;
         
         // Superadmin can edit any company
-        if ($user->hasRole('superadmin')) {
+        if ($user->hasRole('super_admin')) {
             return true;
         }
         
@@ -96,14 +100,21 @@ class CompanyResource extends Resource
         if (!$user) return false;
         
         // Only superadmin can delete companies
-        return $user->hasRole('superadmin');
+        return $user->hasRole('super_admin');
     }
 
     public static function form(Forms\Form $form): Forms\Form
     {   
         $user = Auth::user();
-        $isSuperadmin = $user->hasRole('superadmin');
-        $isHandler = $user->hasRole('handler');
+        $isSuperadmin = $user && $user->hasRole('super_admin');
+        $isHandler = $user && $user->hasRole('handler');
+        
+        // Debug: Let's see what roles the user actually has
+        if ($user) {
+            Log::info('Current user roles: ' . $user->roles->pluck('name')->join(', '));
+            Log::info('Is super_admin: ' . ($isSuperadmin ? 'true' : 'false'));
+            Log::info('Is handler: ' . ($isHandler ? 'true' : 'false'));
+        }
         
         return $form->schema([
             Forms\Components\Section::make('Company Details')->schema([
@@ -120,13 +131,13 @@ class CompanyResource extends Resource
                     ->image()
                     ->imageCropAspectRatio('1:1')
                     ->maxSize(548)
-                    ->directory('company-logos')
+                    ->directory('company_images')
                     ->disk('public')
-                    ->label('Company Logo')
-                    ->helperText('Upload a logo for the company. Recommended size: 300x300px.')
-                    ->required($isSuperadmin) // Only superadmin can upload logo
-                    ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/jpg'])
-                    ->visibility('public'),
+                    ->visibility('public')
+                    ->imageEditor()
+                    ->imageEditorAspectRatios([
+                        '1:1',
+                    ]),
                     
                 Forms\Components\Select::make('business_type_id')
                     ->required()
@@ -146,29 +157,36 @@ class CompanyResource extends Resource
                     ->visible($isHandler), // Handler sees read-only business type
                     
                 Forms\Components\Select::make('user_id')
-                    ->label('Employees/Users')
+                    ->label('Handlers')
                     ->multiple()
                     ->preload()
-                    ->relationship('users', 'name', modifyQueryUsing: function (Builder $query) use ($user, $isSuperadmin) {
-                        if ($isSuperadmin) {
-                            // Superadmin can assign any user
-                            return $query;
-                        }
-                        
-                        // Handler can only see users from their companies or unassigned users
-                        if ($user->hasRole('handler')) {
-                            return $query->where(function (Builder $subQuery) use ($user) {
-                                $subQuery->whereHas('companies', function (Builder $companyQuery) use ($user) {
-                                    $companyQuery->whereIn('companies.id', $user->companies->pluck('id'));
-                                })
-                                ->orWhereDoesntHave('companies'); // Include users without companies
-                            });
-                        }
-                        
-                        return $query->whereRaw('1 = 0');
-                    })
+                    ->relationship('users', 'name')
                     ->searchable()
-                    ->helperText($isHandler ? 'You can only assign users from your companies or unassigned users' : null),
+                    ->visible(function() use ($user) {
+                        // Double check - only show if user is NOT a handler
+                        if (!$user) return false;
+                        
+                        // If user has handler role, hide this field completely
+                        if ($user->hasRole('handler')) {
+                            return false;
+                        }
+                        
+                        // Show only if user has superadmin role
+                        return $user->hasRole('super_admin');
+                    }),
+                    
+                // Show current handlers as read-only for handlers
+                Forms\Components\Placeholder::make('current_users_display')
+                    ->label('Current Handlers')
+                    ->content(function ($record) {
+                        if (!$record || !$record->users) {
+                            return 'No handlers assigned';
+                        }
+                        
+                        $userNames = $record->users->pluck('name')->toArray();
+                        return empty($userNames) ? 'No handlers assigned' : implode(', ', $userNames);
+                    })
+                    ->visible($isHandler), // Only show to handlers
 
                 Forms\Components\Toggle::make('is_active')
                     ->label('Company Active')
@@ -276,14 +294,15 @@ class CompanyResource extends Resource
     public static function table(Tables\Table $table): Tables\Table
     {
         $user = Auth::user();
-        $isSuperadmin = $user->hasRole('superadmin');
+        $isSuperadmin = $user->hasRole('super_admin');
         
         return $table
             ->columns([
                 Tables\Columns\ImageColumn::make('company_logo')
                     ->label('Logo')
                     ->size(40)
-                    ->circular(),
+                    ->circular()
+                    ->disk('public'),
                     
                 Tables\Columns\TextColumn::make('company_name')
                     ->label('Company Name')
@@ -297,15 +316,13 @@ class CompanyResource extends Resource
                     ->sortable()
                     ->toggleable(),
                     
-                Tables\Columns\TextColumn::make('businessType.type')
+                Tables\Columns\BadgeColumn::make('businessType.type')
                     ->label('Business Type')
-                    ->sortable()
-                    ->badge(),
+                    ->sortable(),
                     
-                Tables\Columns\TextColumn::make('users_count')
-                    ->label('Employees')
+                Tables\Columns\BadgeColumn::make('users_count')
+                    ->label('Handlers')
                     ->counts('users')
-                    ->badge()
                     ->color('success'),
                     
                 Tables\Columns\IconColumn::make('is_active')
@@ -346,7 +363,7 @@ class CompanyResource extends Resource
                     ->visible($isSuperadmin),
                     
                 Tables\Filters\Filter::make('has_users')
-                    ->label('Has Employees')
+                    ->label('Has Handlers')
                     ->query(fn (Builder $query): Builder => $query->has('users'))
                     ->toggle(),
             ])
@@ -361,7 +378,7 @@ class CompanyResource extends Resource
                         if ($record->users()->count() > 0) {
                             Notification::make()
                                 ->title('Cannot Delete')
-                                ->body('Company has employees assigned. Remove all employees first.')
+                                ->body('Company has handlers assigned. Remove all handlers first.')
                                 ->danger()
                                 ->send();
                             return false;
@@ -386,7 +403,7 @@ class CompanyResource extends Resource
                             if ($record->users()->count() > 0 || $record->loyaltyPrograms()->count() > 0) {
                                 Notification::make()
                                     ->title('Cannot Delete')
-                                    ->body('Some companies have employees or loyalty programs assigned.')
+                                    ->body('Some companies have handlers or loyalty programs assigned.')
                                     ->danger()
                                     ->send();
                                 return false;
