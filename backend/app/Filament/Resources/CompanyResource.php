@@ -121,6 +121,11 @@ class CompanyResource extends Resource
                     ->imageCropAspectRatio('1:1')
                     ->maxSize(548)
                     ->directory('company-logos')
+                    ->disk('public')
+                    ->label('Company Logo')
+                    ->helperText('Upload a logo for the company. Recommended size: 300x300px.')
+                    ->required($isSuperadmin) // Only superadmin can upload logo
+                    ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/jpg'])
                     ->visibility('public'),
                     
                 Forms\Components\Select::make('business_type_id')

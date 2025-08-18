@@ -202,6 +202,9 @@ class LoyaltyProgramResource extends Resource
                     ->date()
                     ->sortable()
                     ->placeholder('No end date'),
+                
+                IconColumn::make('action')
+                    ->label('Actions'),
                     
                 TextColumn::make('created_at')
                     ->date()

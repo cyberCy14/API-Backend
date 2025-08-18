@@ -248,7 +248,8 @@ class LoyaltyProgramRuleResource extends Resource
                 
             Tables\Columns\IconColumn::make('is_active')
                 ->boolean(),
-                
+            Tables\Columns\IconColumn::make('action')
+                ->label('Actions'),
             Tables\Columns\TextColumn::make('active_from_date')
                 ->date('M d, Y')
                 ->placeholder('N/A')
@@ -290,6 +291,7 @@ class LoyaltyProgramRuleResource extends Resource
                     
                 Tables\Filters\TernaryFilter::make('is_active')
                     ->label('Active'),
+                
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),

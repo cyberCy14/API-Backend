@@ -172,7 +172,7 @@ class LoyaltyRewardResource extends Resource
                     Toggle::make('is_active')
                         ->default(true)
                         ->required(),
-                        
+                    
                     TextInput::make('max_redemption_rate')
                         ->label('Max Redemptions')
                         ->numeric()
@@ -240,6 +240,9 @@ class LoyaltyRewardResource extends Resource
                     
                 IconColumn::make('is_active')
                     ->boolean(),
+                
+                IconColumn::make('action')
+                    ->label('Actions'),
                     
                 TextColumn::make('max_redemption_rate')
                     ->label('Max Redemptions')

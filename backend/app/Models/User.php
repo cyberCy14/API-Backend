@@ -167,4 +167,19 @@ class User extends Authenticatable
 
         return $query->where('id', $user->id); // Default: only themselves
     }
+
+    public function initials(): string
+{
+    $name = $this->name ?? '';
+
+    // Split name by spaces and take first letter of each part
+    $initials = collect(explode(' ', $name))
+        ->filter() // remove empty
+        ->map(fn ($part) => strtoupper(mb_substr($part, 0, 1)))
+        ->join('');
+
+    // Fallback: first letter of email if no name
+    return $initials ?: strtoupper(mb_substr($this->email, 0, 1));
+}
+
 }
