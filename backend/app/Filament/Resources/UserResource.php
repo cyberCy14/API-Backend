@@ -25,6 +25,27 @@ class UserResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-users';
     protected static ?string $navigationGroup = 'User  Management';
 
+    public static function canAccess(): bool
+{
+    $user = auth()->user();
+
+    if (!$user) {
+        return false;
+    }
+
+    // Super admin always sees everything
+    if ($user->hasRole('super_admin')) {
+        return true;
+    }
+
+    // Handler can only see resources tied to their company
+    if ($user->hasRole('handler')) {
+        return true; // They can access, but filtering is applied in getEloquentQuery()
+    }
+
+    return false;
+}
+
     // Filament Shield handles permissions, so we only need data filtering
     public static function getEloquentQuery(): Builder
     {
@@ -32,7 +53,7 @@ class UserResource extends Resource
         $query = parent::getEloquentQuery();
 
         // If user is superadmin, show all users
-        if ($user && $user->hasRole('superadmin')) {
+        if ($user && $user->hasRole('super_admin')) {
             return $query;
         }
 
@@ -63,7 +84,7 @@ class UserResource extends Resource
         if ($user->hasRole('handler')) {
             return false; // Handlers cannot create users
         }
-        return $user && ($user->hasRole('superadmin') || $user->hasRole('handler'));
+        return $user && ($user->hasRole('super_admin') || $user->hasRole('handler'));
     }
 
     /**
@@ -76,7 +97,7 @@ class UserResource extends Resource
         if (!$user) return false;
 
         // Superadmin can edit anyone
-        if ($user->hasRole('superadmin')) {
+        if ($user->hasRole('super_admin')) {
             return true;
         }
 
@@ -112,14 +133,14 @@ class UserResource extends Resource
         }
 
         // Superadmin can delete anyone (except themselves, checked above)
-        if ($user->hasRole('superadmin')) {
+        if ($user->hasRole('super_admin')) {
             return true;
         }
 
         // Handler can delete users from their companies (but not other handlers)
         if ($user->hasRole('handler')) {
             // Cannot delete other handlers or superadmins
-            if ($record->hasRole('handler') || $record->hasRole('superadmin')) {
+            if ($record->hasRole('handler') || $record->hasRole('super_admin')) {
                 return false;
             }
 
@@ -163,26 +184,26 @@ class UserResource extends Resource
                     ->multiple()
                     ->relationship('roles', 'name', modifyQueryUsing: function (Builder $query) use ($user) {
                         // Superadmin can assign any role
-                        if ($user->hasRole('superadmin')) {
+                        if ($user->hasRole('super_admin')) {
                             return $query;
                         }
 
                         // Handler can only assign non-admin roles
                         if ($user->hasRole('handler')) {
-                            return $query->whereNotIn('name', ['superadmin', 'handler']);
+                            return $query->whereNotIn('name', ['super_admin', 'handler']);
                         }
 
                         return $query->whereRaw('1 = 0');
                     })
                     ->preload()
-                    ->visible(fn () => $user->hasRole('superadmin') || $user->hasRole('handler'))
+                    ->visible(fn () => $user->hasRole('super_admin') || $user->hasRole('handler'))
                     ->helperText($user->hasRole('handler') ? 'You can only assign basic user roles' : null),
 
                 Forms\Components\Select::make('companies')
                     ->multiple()
                     ->relationship('companies', 'company_name', modifyQueryUsing: function (Builder $query) use ($user) {
                         // Superadmin can assign any company
-                        if ($user->hasRole('superadmin')) {
+                        if ($user->hasRole('super_admin')) {
                             return $query->where('is_active', true);
                         }
 
@@ -223,9 +244,9 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('roles.name')
                     ->badge()
                     ->colors([
-                        'danger' => 'superadmin',
+                        'danger' => 'super_admin',
                         'warning' => 'handler',
-                        'success' => fn ($state): bool => !in_array($state, ['superadmin', 'handler']),
+                        'success' => fn ($state): bool => !in_array($state, ['super_admin', 'handler']),
                     ])
                     ->label('Roles'),
 
@@ -256,7 +277,7 @@ class UserResource extends Resource
                 Tables\Filters\SelectFilter::make('companies')
                     ->relationship('companies', 'company_name', modifyQueryUsing: function (Builder $query) use ($user) {
                         // Superadmin can filter by any company
-                        if ($user->hasRole('superadmin')) {
+                        if ($user->hasRole('super_admin')) {
                             return $query->where('is_active', true);
                         }
 
@@ -322,7 +343,7 @@ class UserResource extends Resource
     {
         $user = Auth::user();
 
-        if ($user && $user->hasRole('superadmin')) {
+        if ($user && $user->hasRole('super_admin')) {
             return static::getModel()::count();
         }
 

@@ -26,6 +26,7 @@ class CustomerPoint extends Model
         'redemption_description',
         'transaction_date',
         'qr_code_path',
+        'total_points',
 
     ];
 
@@ -35,6 +36,7 @@ class CustomerPoint extends Model
         'rule_breakdown' => 'array',
         'credited_at' => 'datetime',
         'redeemed_at' => 'datetime',
+        'total_points' => 'float',
     ];
 
     public function company(): BelongsTo
@@ -59,7 +61,7 @@ class CustomerPoint extends Model
 
     public function scopeCredited(Builder $query): Builder
     {
-        return $query->where('status', 'credited');
+        return $query->where('status', 'completed');
     }
 
     public function scopeEarnings(Builder $query): Builder
@@ -92,7 +94,7 @@ class CustomerPoint extends Model
     public function creditPoints(): bool
     {
         if ($this->status === 'pending' && $this->transaction_type === 'earning') {
-            $this->update(['status' => 'credited']);
+            $this->update(['status' => 'completed', 'credited_at' => now()]);
             return true;
         }
         return false;
@@ -102,7 +104,7 @@ class CustomerPoint extends Model
     public function redeemPoints(): bool
 {
     if ($this->status === 'pending' && $this->transaction_type === 'redemption') {
-        $this->update(['status' => 'credited']); // Use 'credited' status for both earnings and redemptions
+        $this->update(['status' => 'completed']); // Use 'credited' status for both earnings and redemptions
         return true;
     }
     return false;

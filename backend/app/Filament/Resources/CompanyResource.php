@@ -43,7 +43,7 @@ class CompanyResource extends Resource
         $user = Auth::user();
         $query = parent::getEloquentQuery();
         
-        // If user is superadmin, show all companies
+        // If user is super_admin, show all companies
         if ($user->hasRole('super_admin')) {
             return $query;
         }
@@ -65,7 +65,7 @@ class CompanyResource extends Resource
     public static function canCreate(): bool
     {
         $user = Auth::user();
-        return $user && $user->hasRole('super_admin'); // Only superadmin can create companies
+        return $user && $user->hasRole('super_admin'); // Only super_admin can create companies
     }
 
     /**
@@ -99,7 +99,7 @@ class CompanyResource extends Resource
         
         if (!$user) return false;
         
-        // Only superadmin can delete companies
+        // Only super_admin can delete companies
         return $user->hasRole('super_admin');
     }
 
@@ -149,7 +149,7 @@ class CompanyResource extends Resource
                             ->required()
                             ->maxLength(255),
                     ])
-                    ->visible($isSuperadmin), // Only superadmin can change business type
+                    ->visible($isSuperadmin), // Only super_admin can change business type
                     
                 Forms\Components\Placeholder::make('business_type_display')
                     ->label('Business Type')
@@ -171,7 +171,7 @@ class CompanyResource extends Resource
                             return false;
                         }
                         
-                        // Show only if user has superadmin role
+                        // Show only if user has super_admin role
                         return $user->hasRole('super_admin');
                     }),
                     
@@ -191,7 +191,7 @@ class CompanyResource extends Resource
                 Forms\Components\Toggle::make('is_active')
                     ->label('Company Active')
                     ->default(true)
-                    ->visible($isSuperadmin) // Only superadmin can activate/deactivate
+                    ->visible($isSuperadmin) // Only super_admin can activate/deactivate
                     ->helperText('Inactive companies will not appear in dropdowns'),
                     
                 Forms\Components\Placeholder::make('status_display')
@@ -274,7 +274,7 @@ class CompanyResource extends Resource
                     ->maxLength(255)
                     ->unique(ignoreRecord: true),
             ])->columns(2)
-            ->visible($isSuperadmin), // Only superadmin can view/edit registration details
+            ->visible($isSuperadmin), // Only super_admin can view/edit registration details
 
             Forms\Components\Section::make('Company Registration (Read Only)')
                 ->schema([
@@ -430,13 +430,14 @@ class CompanyResource extends Resource
         
         if (!$user) return null;
         
-        if ($user->isSuperAdmin()) {
+        // FIXED: Use the trait methods with correct names
+        if ((new static)->isSuperAdmin($user)) {
             $total = static::getModel()::count();
             $active = static::getModel()::where('is_active', true)->count();
             return "{$active}/{$total}";
         }
         
-        if ($user->isHandler()) {
+        if ((new static)->isHandler($user)) {
             return (string) $user->companies()->count();
         }
         
@@ -450,19 +451,33 @@ class CompanyResource extends Resource
     {
         $user = Auth::user();
         
-        if ($user && $user->isHandler()) {
+        // FIXED: Use the trait method with correct name
+        if ($user && (new static)->isHandler($user)) {
             return 'My Companies';
         }
         
         return 'Companies';
     }
 
-    /**
-     * Check if the current user can view this resource
-     */
     public static function canAccess(): bool
     {
-        $user = Auth::user();
-        return $user && ($user->isSuperAdmin() || $user->isHandler());
+        $user = auth()->user();
+    
+        if (!$user) {
+            return false;
+        }
+    
+        // Super admin always sees everything
+        if ($user->hasRole('super_admin')) {
+            return true;
+        }
+    
+        // Handler can only see resources tied to their company
+        if ($user->hasRole('handler')) {
+            return true; // They can access, but filtering is applied in getEloquentQuery()
+        }
+    
+        return false;
     }
+    
 }

@@ -22,11 +22,12 @@ return new class extends Migration
                 ->onDelete('cascade');
 
             $table->foreignId('loyalty_program_id')
+                 ->nullable()
                 ->constrained('loyalty_programs')
                 ->onDelete('cascade');
 
             $table->integer('points_earned')->default(0);
-            $table->decimal('purchase_amount', 10, 2)->default(0.00);
+            $table->decimal('purchase_amount', 10, 2)->nullable()->default(0.00);
 
             $table->timestamp('credited_at')->nullable();
             $table->timestamp('redeemed_at')->nullable();

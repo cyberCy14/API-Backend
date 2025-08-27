@@ -21,7 +21,7 @@ class LoyaltyProgramPolicy
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, LoyaltyProgram $loyalty_program): bool
+    public function view(User $user, LoyaltyProgram $loyaltyProgram): bool
     {
         return $user->can('view_loyalty::program');
     }
@@ -37,7 +37,7 @@ class LoyaltyProgramPolicy
     /**
      * Determine whether the user can update the model.
      */
-    public function update(User $user, LoyaltyProgram $loyalty_program): bool
+    public function update(User $user, LoyaltyProgram $loyaltyProgram): bool
     {
         return $user->can('update_loyalty::program');
     }
@@ -45,7 +45,7 @@ class LoyaltyProgramPolicy
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(User $user, LoyaltyProgram $loyalty_program): bool
+    public function delete(User $user, LoyaltyProgram $loyaltyProgram): bool
     {
         return $user->can('delete_loyalty::program');
     }
@@ -55,15 +55,15 @@ class LoyaltyProgramPolicy
      */
     public function deleteAny(User $user): bool
     {
-        return $user->can('delete_any_program');
+        return $user->can('delete_any_loyalty::program');
     }
 
     /**
      * Determine whether the user can permanently delete.
      */
-    public function forceDelete(User $user, LoyaltyProgram $loyalty_program): bool
+    public function forceDelete(User $user, LoyaltyProgram $loyaltyProgram): bool
     {
-        return $user->can('force_delete_program');
+        return $user->can('force_delete_loyalty::program');
     }
 
     /**
@@ -71,15 +71,15 @@ class LoyaltyProgramPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->can('force_delete_any_program');
+        return $user->can('force_delete_any_loyalty::program');
     }
 
     /**
      * Determine whether the user can restore.
      */
-    public function restore(User $user, LoyaltyProgram $loyalty_program): bool
+    public function restore(User $user, LoyaltyProgram $loyaltyProgram): bool
     {
-        return $user->can('restore_program');
+        return $user->can('restore_loyalty::program');
     }
 
     /**
@@ -87,15 +87,15 @@ class LoyaltyProgramPolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->can('restore_any_program');
+        return $user->can('restore_any_loyalty::program');
     }
 
     /**
      * Determine whether the user can replicate.
      */
-    public function replicate(User $user, LoyaltyProgram $loyalty_program): bool
+    public function replicate(User $user, LoyaltyProgram $loyaltyProgram): bool
     {
-        return $user->can('replicate_program');
+        return $user->can('replicate_loyalty::program');
     }
 
     /**
@@ -103,6 +103,6 @@ class LoyaltyProgramPolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->can('reorder_program');
+        return $user->can('reorder_loyalty::program');
     }
 }

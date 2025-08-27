@@ -49,3 +49,17 @@ Route::post('login', [AuthController::class, 'login']);
 
     Route::get('loyalty/confirm-earning/{transactionId}', [LoyaltyWebhookController::class, 'confirmEarning']);
     Route::get('loyalty/confirm-redemption/{transactionId}', [LoyaltyWebhookController::class, 'confirmRedemption']);
+    Route::get('/loyalty/transaction/{transactionId}', [LoyaltyWebhookController::class, 'showConfirmation'])
+    ->name('loyalty.confirm');
+    Route::post('/loyalty/confirm-earning/{transactionId}', [LoyaltyWebhookController::class, 'confirmEarning'])
+    ->name('loyalty.confirm.earning');
+    Route::post('/loyalty/confirm-redemption/{transactionId}', [LoyaltyWebhookController::class, 'confirmRedemption'])
+    ->name('loyalty.confirm.redemption');
+
+    Route::get('/loyalty/success/{transactionId}', [LoyaltyWebhookController::class, 'showSuccess'])
+    ->name('loyalty.success');
+
+    Route::prefix('api/loyalty')->group(function () {
+        Route::post('/confirm-earning/{transactionId}', [LoyaltyWebhookController::class, 'confirmEarning']);
+        Route::post('/confirm-redemption/{transactionId}', [LoyaltyWebhookController::class, 'confirmRedemption']);
+    });

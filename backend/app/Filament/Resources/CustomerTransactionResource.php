@@ -41,8 +41,8 @@ class CustomerTransactionResource extends Resource
         $user = Auth::user();
         $query = parent::getEloquentQuery();
         
-        // If user is superadmin, show all transactions
-        if ($user->hasRole('superadmin')) {
+        // If user is super_admin, show all transactions
+        if ($user->hasRole('super_admin')) {
             return $query;
         }
         
@@ -59,7 +59,7 @@ class CustomerTransactionResource extends Resource
     public static function canCreate(): bool
     {
         $user = Auth::user();
-        return $user && ($user->hasRole('superadmin') || $user->hasRole('handler'));
+        return $user && ($user->hasRole('super_admin') || $user->hasRole('handler'));
     }
 
     public static function canEdit($record): bool
@@ -69,7 +69,7 @@ class CustomerTransactionResource extends Resource
         if (!$user) return false;
         
         // Superadmin can edit any transaction
-        if ($user->hasRole('superadmin')) {
+        if ($user->hasRole('super_admin')) {
             return true;
         }
         
@@ -87,14 +87,14 @@ class CustomerTransactionResource extends Resource
         
         if (!$user) return false;
         
-        // Only superadmin can delete transactions (for data integrity)
-        return $user->hasRole('superadmin');
+        // Only super_admin can delete transactions (for data integrity)
+        return $user->hasRole('super_admin');
     }
 
     public static function form(Form $form): Form
     {
         $user = Auth::user();
-        $isSuperadmin = $user->hasRole('superadmin');
+        $isSuperadmin = $user->hasRole('super_admin');
         
         return $form->schema([
             Forms\Components\Section::make('Transaction Details')
@@ -365,7 +365,23 @@ class CustomerTransactionResource extends Resource
 
     public static function canAccess(): bool
     {
-        $user = Auth::user();
-        return $user && ($user->isSuperAdmin() || $user->isHandler());
+        $user = auth()->user();
+    
+        if (!$user) {
+            return false;
+        }
+    
+        // Super admin always sees everything
+        if ($user->hasRole('super_admin')) {
+            return true;
+        }
+    
+        // Handler can only see resources tied to their company
+        if ($user->hasRole('handler')) {
+            return true; // They can access, but filtering is applied in getEloquentQuery()
+        }
+    
+        return false;
     }
+    
 }

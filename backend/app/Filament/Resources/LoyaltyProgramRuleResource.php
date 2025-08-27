@@ -28,8 +28,8 @@ class LoyaltyProgramRuleResource extends Resource
         $user = Auth::user();
         $query = parent::getEloquentQuery();
         
-        // If user is superadmin, show all rules
-        if ($user->hasRole('superadmin')) {
+        // If user is super_admin, show all rules
+        if ($user->hasRole('super_admin')) {
             return $query;
         }
         
@@ -48,7 +48,7 @@ class LoyaltyProgramRuleResource extends Resource
     public static function canCreate(): bool
     {
         $user = Auth::user();
-        return $user && ($user->hasRole('superadmin') || $user->hasRole('handler'));
+        return $user && ($user->hasRole('super_admin') || $user->hasRole('handler'));
     }
 
     public static function canEdit($record): bool
@@ -58,7 +58,7 @@ class LoyaltyProgramRuleResource extends Resource
         if (!$user) return false;
         
         // Superadmin can edit any rule
-        if ($user->hasRole('superadmin')) {
+        if ($user->hasRole('super_admin')) {
             return true;
         }
         
@@ -77,7 +77,7 @@ class LoyaltyProgramRuleResource extends Resource
         if (!$user) return false;
         
         // Superadmin can delete any rule
-        if ($user->hasRole('superadmin')) {
+        if ($user->hasRole('super_admin')) {
             return true;
         }
         
@@ -92,7 +92,7 @@ class LoyaltyProgramRuleResource extends Resource
     public static function form(Forms\Form $form): Forms\Form
     {
         $user = Auth::user();
-        $isSuperadmin = $user->hasRole('superadmin');
+        $isSuperadmin = $user->hasRole('super_admin');
         
         return $form->schema([
             Forms\Components\Section::make('Basic Info')->schema([
@@ -196,7 +196,7 @@ class LoyaltyProgramRuleResource extends Resource
     public static function table(Tables\Table $table): Tables\Table
     {
         $user = Auth::user();
-        $isSuperadmin = $user->hasRole('superadmin');
+        $isSuperadmin = $user->hasRole('super_admin');
         
         return $table->columns([
             Tables\Columns\TextColumn::make('loyaltyProgram.program_name')
@@ -399,7 +399,23 @@ class LoyaltyProgramRuleResource extends Resource
 
     public static function canAccess(): bool
     {
-        $user = Auth::user();
-        return $user && ($user->isSuperAdmin() || $user->isHandler());
+        $user = auth()->user();
+    
+        if (!$user) {
+            return false;
+        }
+    
+        // Super admin always sees everything
+        if ($user->hasRole('super_admin')) {
+            return true;
+        }
+    
+        // Handler can only see resources tied to their company
+        if ($user->hasRole('handler')) {
+            return true; // They can access, but filtering is applied in getEloquentQuery()
+        }
+    
+        return false;
     }
+    
 }
