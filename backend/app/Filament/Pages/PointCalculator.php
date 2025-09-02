@@ -46,7 +46,7 @@ class PointCalculator extends Page implements HasForms
      */
     public static function canAccess(): bool
     {
-        $user = auth()->user();
+        $user = \Illuminate\Support\Facades\Auth::user();
     
         if (!$user) {
             return false;

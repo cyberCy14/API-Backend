@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Facades\Storage;
+use App\Services\LoyaltyService;
 
 trait HandlesPointRedemption
 {
@@ -35,42 +36,43 @@ trait HandlesPointRedemption
             $customerEmail = $this->data['redeem_customer_email'];
             $redeemPoints = (int) $this->data['redeem_points'];
 
-            $currentBalance = CustomerPoint::getCustomerBalance($customerEmail, $companyId);
-
-            if ($currentBalance < $redeemPoints) {
+            // Get customer balance for THIS SPECIFIC COMPANY only
+            // Use the service to check eligibility and create transaction
+            $loyaltyService = app(LoyaltyService::class);
+            
+            $eligibility = $loyaltyService->checkRedemptionEligibility($customerEmail, $companyId, $redeemPoints);
+            
+            if (!$eligibility['eligible']) {
                 Notification::make()
                     ->title('Insufficient Points')
-                    ->body("Customer only has {$currentBalance} points available")
+                    ->body("Customer only has {$eligibility['current_balance']} points available for this company")
                     ->danger()
                     ->send();
                 return;
             }
 
-            $transactionId = 'RED-' . strtoupper(Str::random(10));
-
-            // Note: Set loyalty_program_id to null since redemptions might not be tied to specific programs
-            $redemptionTransaction = CustomerPoint::create([
+            // Create redemption transaction using the service
+            $redemptionTransaction = $loyaltyService->createRedemptionTransaction([
                 'customer_email' => $customerEmail,
                 'company_id' => $companyId,
-                'loyalty_program_id' => null, // Fixed: explicitly set to null
-                'points_earned' => -$redeemPoints,
-                'purchase_amount' => null,
-                'transaction_id' => $transactionId,
-                'transaction_type' => 'redemption',
-                'status' => 'pending',
+                'redeem_points' => $redeemPoints,
                 'redemption_description' => $this->data['redemption_description'],
                 'created_by' => Auth::id(),
             ]);
 
+            $transactionId = $redemptionTransaction->id;
+
             Log::info('Redemption record created (pending)', [
                 'id' => $redemptionTransaction->id, 
-                'transaction_id' => $transactionId
+                'transaction_id' => $transactionId,
+                'company_id' => $companyId,
+                'customer_email' => $customerEmail,
+                'points_to_redeem' => $redeemPoints
             ]);
 
             // Generate the webhook URL for redemption confirmation
             $webhookUrl = url('loyalty/confirm-redemption/' . $transactionId);
             
-
             $qrCode = QrCode::format('png')
                 ->size(300)
                 ->margin(2)
@@ -92,12 +94,14 @@ trait HandlesPointRedemption
             Log::info('Redemption QR Code generated successfully with webhook URL', [
                 'transaction_id' => $transactionId,
                 'file_path' => $qrFileName,
-                'webhook_url' => $webhookUrl
+                'webhook_url' => $webhookUrl,
+                'company_id' => $companyId,
+                'customer_balance_before' => $eligibility['current_balance']
             ]);
 
             Notification::make()
                 ->title('Redemption QR Generated Successfully!')
-                ->body("Scan QR to confirm redemption. Transaction ID: {$transactionId}")
+                ->body("Scan QR to confirm redemption. Transaction ID: {$transactionId}. Customer has {$eligibility['current_balance']} points available.")
                 ->success()
                 ->persistent()
                 ->send();
@@ -131,7 +135,6 @@ trait HandlesPointRedemption
                 ->persistent()
                 ->send();
         }
-        
     }
 
     public function resetRedemptionData(): void

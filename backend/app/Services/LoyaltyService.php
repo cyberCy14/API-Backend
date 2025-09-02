@@ -86,43 +86,69 @@ class LoyaltyService
      * Create a pending earning transaction
      */
     public function createEarningTransaction(array $data): CustomerPoint
-    {
-        $transactionId = 'TXN-' . strtoupper(Str::random(10));
+{
+    $transactionId = 'TXN-' . strtoupper(Str::random(10));
 
-        return CustomerPoint::create([
-            'customer_email' => $data['customer_email'],
-            'company_id' => $data['company_id'],
-            'loyalty_program_id' => $data['loyalty_program_id'],
-            'points_earned' => $data['points_earned'],
-            'purchase_amount' => $data['purchase_amount'],
-            'transaction_id' => $transactionId,
-            'transaction_type' => 'earning',
-            'status' => 'pending',
-            'rule_breakdown' => json_encode($data['rule_breakdown'] ?? []),
-            'created_by' => $data['created_by'],
-        ]);
-    }
+    Log::info('Creating earning transaction', [
+        'customer_email' => $data['customer_email'],
+        'company_id' => $data['company_id'],
+        'points_earned' => $data['points_earned'],
+        'transaction_id' => $transactionId
+    ]);
+
+    return CustomerPoint::create([
+        'customer_email' => $data['customer_email'],
+        'company_id' => $data['company_id'],
+        'loyalty_program_id' => $data['loyalty_program_id'],
+        'points_earned' => $data['points_earned'],
+        'purchase_amount' => $data['purchase_amount'],
+        'transaction_id' => $transactionId,
+        'transaction_type' => 'earning',
+        'status' => 'pending',
+        'rule_breakdown' => json_encode($data['rule_breakdown'] ?? []),
+        'created_by' => $data['created_by'],
+    ]);
+}
 
     /**
      * Create a pending redemption transaction
      */
     public function createRedemptionTransaction(array $data): CustomerPoint
-    {
-        $transactionId = 'RED-' . strtoupper(Str::random(10));
-
-        return CustomerPoint::create([
-            'customer_email' => $data['customer_email'],
-            'company_id' => $data['company_id'],
-            'loyalty_program_id' => null, // Redemptions might not be tied to specific programs
-            'points_earned' => -abs($data['redeem_points']), // Ensure negative value
-            'purchase_amount' => null,
-            'transaction_id' => $transactionId,
-            'transaction_type' => 'redemption',
-            'status' => 'pending',
-            'redemption_description' => $data['redemption_description'],
-            'created_by' => $data['created_by'],
-        ]);
+{
+    // First check if customer has enough points for THIS SPECIFIC COMPANY
+    $eligibility = $this->checkRedemptionEligibility(
+        $data['customer_email'], 
+        $data['company_id'], 
+        $data['redeem_points']
+    );
+    
+    if (!$eligibility['eligible']) {
+        throw new \Exception("Insufficient points for redemption. Customer has {$eligibility['current_balance']} points but trying to redeem {$eligibility['required_points']}");
     }
+    
+    $transactionId = 'RED-' . strtoupper(Str::random(10));
+
+    Log::info('Creating redemption transaction', [
+        'customer_email' => $data['customer_email'],
+        'company_id' => $data['company_id'],
+        'redeem_points' => $data['redeem_points'],
+        'customer_balance' => $eligibility['current_balance'],
+        'transaction_id' => $transactionId
+    ]);
+
+    return CustomerPoint::create([
+        'customer_email' => $data['customer_email'],
+        'company_id' => $data['company_id'],
+        'loyalty_program_id' => null, // Redemptions might not be tied to specific programs
+        'points_earned' => -abs($data['redeem_points']), // Ensure negative value
+        'purchase_amount' => null,
+        'transaction_id' => $transactionId,
+        'transaction_type' => 'redemption',
+        'status' => 'pending',
+        'redemption_description' => $data['redemption_description'],
+        'created_by' => $data['created_by'],
+    ]);
+}
 
     /**
      * Generate QR code for a transaction
@@ -156,6 +182,13 @@ class LoyaltyService
     {
         $currentBalance = CustomerPoint::getCustomerBalance($customerEmail, $companyId);
         
+        Log::info('Checking redemption eligibility', [
+            'customer_email' => $customerEmail,
+            'company_id' => $companyId,
+            'current_balance' => $currentBalance,
+            'redeem_points' => $redeemPoints
+        ]);
+        
         return [
             'eligible' => $currentBalance >= $redeemPoints,
             'current_balance' => $currentBalance,
@@ -172,12 +205,32 @@ class LoyaltyService
         $balance = CustomerPoint::getCustomerBalance($customerEmail, $companyId);
         $transactions = CustomerPoint::getCustomerTransactionHistory($customerEmail, $companyId);
         
+        // Calculate totals using company-specific data
+        $totalEarned = $transactions->where('transaction_type', 'earning')
+            ->where('status', 'completed')
+            ->sum('points_earned');
+            
+        $totalRedeemed = abs($transactions->where('transaction_type', 'redemption')
+            ->where('status', 'completed')
+            ->sum('points_earned'));
+        
+        Log::info('Customer summary generated', [
+            'customer_email' => $customerEmail,
+            'company_id' => $companyId,
+            'balance' => $balance,
+            'total_earned' => $totalEarned,
+            'total_redeemed' => $totalRedeemed,
+            'transaction_count' => $transactions->count()
+        ]);
+        
         return [
+            'customer_email' => $customerEmail,
+            'company_id' => $companyId,
             'balance' => $balance,
             'total_transactions' => $transactions->count(),
             'transactions' => $transactions->toArray(),
-            'total_earned' => $transactions->where('transaction_type', 'earning')->where('status', 'completed')->sum('points_earned'),
-            'total_redeemed' => abs($transactions->where('transaction_type', 'redemption')->where('status', 'completed')->sum('points_earned')),
+            'total_earned' => $totalEarned,
+            'total_redeemed' => $totalRedeemed,
         ];
     }
 }
