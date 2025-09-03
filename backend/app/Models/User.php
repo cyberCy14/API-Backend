@@ -58,10 +58,10 @@ class User extends Authenticatable
     {
         try {
             // First try using Spatie's hasRole method
-            return $this->hasRole('superadmin');
+            return $this->hasRole('super_admin');
         } catch (\Exception $e) {
             // Fallback: check roles relationship directly
-            return $this->roles()->where('name', 'superadmin')->exists();
+            return $this->roles()->where('name', 'super_admin')->exists();
         }
     }
 
