@@ -30,7 +30,7 @@
                 <div class="space-y-2">
                     <div class="flex justify-between">
                         <span class="text-gray-600">Customer:</span>
-                        <span class="font-medium">{{ $customer->customer_email }}</span>
+                       <span class="font-medium">{{$customer->customer_id ? $customer->customer_email : $customer->customer_id}}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600">Points Redeemed:</span>

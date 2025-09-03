@@ -38,9 +38,10 @@ class ViewCustomerTransactions extends ViewRecord
                         TextEntry::make('transaction_id')
                             ->label('Transaction ID')
                             ->copyable(),
-                        TextEntry::make('customer_email')
+                            TextEntry::make('customer_email')
                             ->label('Customer Email')
-                            ->copyable(),
+                            ->formatStateUsing(fn ($record) => $record->customer_id ?? $record->customer_email)
+                            ->copyable(),                        
                         TextEntry::make('company.company_name')
                             ->label('Company Name'),
                         TextEntry::make('loyaltyProgram.program_name')

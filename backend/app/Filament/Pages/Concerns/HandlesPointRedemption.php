@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Filament\Pages\Concerns;
 
 use App\Models\CustomerPoint;
@@ -19,13 +18,32 @@ trait HandlesPointRedemption
     public function generateRedemptionQr(): void
     {
         try {
-            // Validate only the fields relevant to the 'redeem_points' tab
-            $this->validate([
+            // Validate fields - support both customer_id and email
+            $validationRules = [
                 'data.redeem_company_id' => 'required',
-                'data.redeem_customer_email' => 'required|email',
                 'data.redeem_points' => 'required|numeric|min:1',
                 'data.redemption_description' => 'required',
-            ]);
+            ];
+
+            // Require at least one customer identifier
+            if (empty($this->data['redeem_customer_id']) && empty($this->data['redeem_customer_email'])) {
+                Notification::make()
+                    ->title('Customer Identifier Required')
+                    ->body('Please provide either Customer ID or Customer Email')
+                    ->danger()
+                    ->send();
+                return;
+            }
+
+            // Add validation for the provided identifier
+            if (!empty($this->data['redeem_customer_id'])) {
+                $validationRules['data.redeem_customer_id'] = 'required|string';
+            }
+            if (!empty($this->data['redeem_customer_email'])) {
+                $validationRules['data.redeem_customer_email'] = 'required|email';
+            }
+
+            $this->validate($validationRules);
 
             // Additional security check
             if (!$this->validateCompanyAccess($this->data['redeem_company_id'])) {
@@ -33,19 +51,20 @@ trait HandlesPointRedemption
             }
 
             $companyId = $this->data['redeem_company_id'];
-            $customerEmail = $this->data['redeem_customer_email'];
+            $customerId = $this->data['redeem_customer_id'] ?? null;
+            $customerEmail = $this->data['redeem_customer_email'] ?? null;
             $redeemPoints = (int) $this->data['redeem_points'];
 
-            // Get customer balance for THIS SPECIFIC COMPANY only
             // Use the service to check eligibility and create transaction
             $loyaltyService = app(LoyaltyService::class);
             
-            $eligibility = $loyaltyService->checkRedemptionEligibility($customerEmail, $companyId, $redeemPoints);
+            $eligibility = $loyaltyService->checkRedemptionEligibility($customerId, $customerEmail, $companyId, $redeemPoints);
             
             if (!$eligibility['eligible']) {
+                $customerIdentifier = $customerId ?? $customerEmail;
                 Notification::make()
                     ->title('Insufficient Points')
-                    ->body("Customer only has {$eligibility['current_balance']} points available for this company")
+                    ->body("Customer {$customerIdentifier} only has {$eligibility['current_balance']} points available for this company")
                     ->danger()
                     ->send();
                 return;
@@ -53,6 +72,7 @@ trait HandlesPointRedemption
 
             // Create redemption transaction using the service
             $redemptionTransaction = $loyaltyService->createRedemptionTransaction([
+                'customer_id' => $customerId,
                 'customer_email' => $customerEmail,
                 'company_id' => $companyId,
                 'redeem_points' => $redeemPoints,
@@ -66,6 +86,7 @@ trait HandlesPointRedemption
                 'id' => $redemptionTransaction->id, 
                 'transaction_id' => $transactionId,
                 'company_id' => $companyId,
+                'customer_id' => $customerId,
                 'customer_email' => $customerEmail,
                 'points_to_redeem' => $redeemPoints
             ]);
@@ -99,9 +120,10 @@ trait HandlesPointRedemption
                 'customer_balance_before' => $eligibility['current_balance']
             ]);
 
+            $customerIdentifier = $customerId ?? $customerEmail;
             Notification::make()
                 ->title('Redemption QR Generated Successfully!')
-                ->body("Scan QR to confirm redemption. Transaction ID: {$transactionId}. Customer has {$eligibility['current_balance']} points available.")
+                ->body("Scan QR to confirm redemption for {$customerIdentifier}. Transaction ID: {$transactionId}. Customer has {$eligibility['current_balance']} points available.")
                 ->success()
                 ->persistent()
                 ->send();

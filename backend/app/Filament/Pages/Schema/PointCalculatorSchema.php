@@ -97,11 +97,16 @@ class PointCalculatorSchema
                             ->live(onBlur: true)
                             ->afterStateUpdated(fn () => $livewire->resetCalculation()),
 
+                        TextInput::make('customer_id')
+                            ->label('Customer ID')
+                            ->helperText('Enter Customer ID (optional if email is provided)')
+                            ->live(onBlur: true)
+                            ->afterStateUpdated(fn () => $livewire->resetCalculation()),
+
                         TextInput::make('customer_email')
                             ->label('Customer Email')
                             ->email()
-                            ->required()
-                            ->helperText('Points will be credited to this customer')
+                            ->helperText('Points will be credited to this customer (optional if Customer ID is provided)')
                             ->live(onBlur: true)
                             ->afterStateUpdated(fn () => $livewire->resetCalculation()),
                     ])
@@ -141,7 +146,7 @@ class PointCalculatorSchema
                             empty($get('company_id')) ||
                             empty($get('loyalty_program_id')) ||
                             empty($get('purchase_amount')) ||
-                            empty($get('customer_email'))
+                            (empty($get('customer_id')) && empty($get('customer_email')))
                         ),
 
                     Action::make('generate_qr')
@@ -179,11 +184,14 @@ class PointCalculatorSchema
                                 $livewire->resetCustomerData();
                             }),
 
+                        TextInput::make('search_customer_id')
+                            ->label('Customer ID')
+                            ->helperText('Enter Customer ID (optional if email is provided)'),
+
                         TextInput::make('search_customer_email')
                             ->label('Customer Email')
                             ->email()
-                            ->required()
-                            ->helperText('Enter customer email to view their points balance'),
+                            ->helperText('Enter customer email (optional if Customer ID is provided)'),
                     ])
                     ->columns(2),
 
@@ -219,7 +227,7 @@ class PointCalculatorSchema
                         ->action('searchCustomer')
                         ->disabled(fn (Get $get): bool =>
                             empty($get('search_company_id')) ||
-                            empty($get('search_customer_email'))
+                            (empty($get('search_customer_id')) && empty($get('search_customer_email')))
                         ),
                 ])->alignEnd(),
             ]);
@@ -242,10 +250,14 @@ class PointCalculatorSchema
                             ->live()
                             ->afterStateUpdated(fn ($state) => $livewire->validateCompanyAccess($state) && $livewire->resetRedemptionData()),
 
+                        TextInput::make('redeem_customer_id')
+                            ->label('Customer ID')
+                            ->helperText('Enter Customer ID (optional if email is provided)'),
+
                         TextInput::make('redeem_customer_email')
                             ->label('Customer Email')
                             ->email()
-                            ->required(),
+                            ->helperText('Enter customer email (optional if Customer ID is provided)'),
 
                         TextInput::make('redeem_points')
                             ->label('Points to Redeem')
@@ -271,7 +283,7 @@ class PointCalculatorSchema
                         ->action('generateRedemptionQr')
                         ->disabled(fn (Get $get): bool =>
                             empty($get('redeem_company_id')) ||
-                            empty($get('redeem_customer_email')) ||
+                            (empty($get('redeem_customer_id')) && empty($get('redeem_customer_email'))) ||
                             empty($get('redeem_points')) ||
                             empty($get('redemption_description'))
                         )

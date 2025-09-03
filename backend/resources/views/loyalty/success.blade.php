@@ -36,7 +36,7 @@
                 <div class="space-y-2">
                     <div class="flex justify-between">
                         <span class="text-gray-600">Customer:</span>
-                        <span class="font-medium">{{$customer->customer_email}}</span>
+                        <span class="font-medium"> {{ $transaction->customer_email ?? $transaction->customer_id ?? '—' }} </span>
                     </div>
                     
                     <div class="flex justify-between">

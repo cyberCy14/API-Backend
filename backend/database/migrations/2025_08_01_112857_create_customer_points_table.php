@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -14,7 +15,8 @@ return new class extends Migration
         Schema::create('customer_points', function (Blueprint $table) {
             $table->id();
 
-            $table->string('customer_email');
+            $table->string('customer_id')->nullable();
+            $table->string('customer_email')->nullable();
             $table->string('transaction_id')->nullable()->unique();
 
             $table->foreignId('company_id')
@@ -22,7 +24,7 @@ return new class extends Migration
                 ->onDelete('cascade');
 
             $table->foreignId('loyalty_program_id')
-                 ->nullable()
+                ->nullable()
                 ->constrained('loyalty_programs')
                 ->onDelete('cascade');
 
@@ -39,14 +41,18 @@ return new class extends Migration
             $table->enum('transaction_type', ['earning', 'redemption'])->default('earning');
             $table->enum('status', ['pending', 'completed', 'failed'])->default('pending');
             $table->timestamps();
-            
 
-            // Indexes for performance
-
-            $table->index(['customer_email', 'company_id' ]);
+            // Indexes
+            $table->index(['customer_email', 'company_id']);
+            $table->index(['customer_id', 'company_id']);
             $table->index(['transaction_id']);
             $table->index('status');
         });
+
+        // Add a check constraint (works in PostgreSQL, MySQL 8+, MariaDB 10.2+)
+        DB::statement(
+            'ALTER TABLE customer_points ADD CONSTRAINT customer_identifier_check CHECK ((customer_id IS NOT NULL) OR (customer_email IS NOT NULL))'
+        );
     }
 
     /**
@@ -54,6 +60,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Drop the table completely (constraints and indexes will be dropped automatically)
         Schema::dropIfExists('customer_points');
     }
 };

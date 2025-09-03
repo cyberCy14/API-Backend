@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Filament\Pages\Concerns;
 
 use App\Models\LoyaltyProgram;
@@ -18,13 +17,32 @@ trait HandlesPointCalculation
     public function calculatePoints(): void
     {
         try {
-            // Validate only the fields relevant to the 'earn_points' tab
-            $this->validate([
+            // Validate fields - support both customer_id and email
+            $validationRules = [
                 'data.company_id' => 'required',
                 'data.loyalty_program_id' => 'required',
                 'data.purchase_amount' => 'required|numeric|min:0.01',
-                'data.customer_email' => 'required|email',
-            ]);
+            ];
+
+            // Require at least one customer identifier
+            if (empty($this->data['customer_id']) && empty($this->data['customer_email'])) {
+                Notification::make()
+                    ->title('Customer Identifier Required')
+                    ->body('Please provide either Customer ID or Customer Email')
+                    ->danger()
+                    ->send();
+                return;
+            }
+
+            // Add validation for the provided identifier
+            if (!empty($this->data['customer_id'])) {
+                $validationRules['data.customer_id'] = 'required|string';
+            }
+            if (!empty($this->data['customer_email'])) {
+                $validationRules['data.customer_email'] = 'required|email';
+            }
+
+            $this->validate($validationRules);
 
             // Additional security check
             if (!$this->validateCompanyAccess($this->data['company_id'])) {
@@ -60,9 +78,10 @@ trait HandlesPointCalculation
                 'breakdown' => $result['breakdown']
             ]);
 
+            $customerIdentifier = $this->data['customer_id'] ?? $this->data['customer_email'];
             Notification::make()
                 ->title('Points Calculated Successfully!')
-                ->body("Customer will earn {$result['total_points']} points from this purchase")
+                ->body("Customer {$customerIdentifier} will earn {$result['total_points']} points from this purchase")
                 ->success()
                 ->send();
 
@@ -83,13 +102,32 @@ trait HandlesPointCalculation
     public function generateQrAndCreditPoints(): void
     {
         try {
-            // Validate only the fields relevant to the 'earn_points' tab
-            $this->validate([
+            // Validate fields - support both customer_id and email
+            $validationRules = [
                 'data.company_id' => 'required',
                 'data.loyalty_program_id' => 'required',
                 'data.purchase_amount' => 'required|numeric|min:0.01',
-                'data.customer_email' => 'required|email',
-            ]);
+            ];
+
+            // Require at least one customer identifier
+            if (empty($this->data['customer_id']) && empty($this->data['customer_email'])) {
+                Notification::make()
+                    ->title('Customer Identifier Required')
+                    ->body('Please provide either Customer ID or Customer Email')
+                    ->danger()
+                    ->send();
+                return;
+            }
+
+            // Add validation for the provided identifier
+            if (!empty($this->data['customer_id'])) {
+                $validationRules['data.customer_id'] = 'required|string';
+            }
+            if (!empty($this->data['customer_email'])) {
+                $validationRules['data.customer_email'] = 'required|email';
+            }
+
+            $this->validate($validationRules);
 
             // Additional security check
             if (!$this->validateCompanyAccess($this->data['company_id'])) {
@@ -111,7 +149,8 @@ trait HandlesPointCalculation
             $loyaltyService = app(LoyaltyService::class);
             
             $transactionData = [
-                'customer_email' => $this->data['customer_email'],
+                'customer_id' => $this->data['customer_id'] ?? null,
+                'customer_email' => $this->data['customer_email'] ?? null,
                 'company_id' => $this->data['company_id'],
                 'loyalty_program_id' => $this->data['loyalty_program_id'],
                 'points_earned' => $totalPoints,
@@ -136,9 +175,10 @@ trait HandlesPointCalculation
                 'webhook_url' => $webhookUrl
             ]);
 
+            $customerIdentifier = $this->data['customer_id'] ?? $this->data['customer_email'];
             Notification::make()
                 ->title('QR Code Generated Successfully!')
-                ->body("Scan QR to credit points. Transaction ID: {$customerPoint->transaction_id}")
+                ->body("Scan QR to credit points to {$customerIdentifier}. Transaction ID: {$customerPoint->transaction_id}")
                 ->success()
                 ->persistent()
                 ->send();

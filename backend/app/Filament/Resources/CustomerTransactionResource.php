@@ -272,18 +272,22 @@ class CustomerTransactionResource extends Resource
                         'expired' => 'Expired',
                     ]),
                 
-                Filter::make('customer_email')
+                    Filter::make('customer')
                     ->form([
-                        Forms\Components\TextInput::make('email')
-                            ->label('Customer Email')
-                            ->email(),
+                        Forms\Components\TextInput::make('value')
+                            ->label('Customer Email or ID'),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query->when(
-                            $data['email'],
-                            fn (Builder $query, $email): Builder => $query->where('customer_email', 'like', "%{$email}%"),
+                            $data['value'],
+                            fn (Builder $query, $value): Builder =>
+                                $query->where(function ($q) use ($value) {
+                                    $q->where('customer_email', 'like', "%{$value}%")
+                                      ->orWhere('customer_id', 'like', "%{$value}%");
+                                }),
                         );
                     }),
+                
                     
                 Filter::make('created_at')
                     ->form([

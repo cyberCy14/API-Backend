@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Filament\Pages\Concerns;
 
 use App\Models\CustomerPoint;
@@ -17,10 +16,29 @@ trait HandlesCustomerLookup
     {
         try {
             // Validate the search fields
-            $this->validate([
+            $validationRules = [
                 'data.search_company_id' => 'required',
-                'data.search_customer_email' => 'required|email',
-            ]);
+            ];
+
+            // Require at least one customer identifier
+            if (empty($this->data['search_customer_id']) && empty($this->data['search_customer_email'])) {
+                Notification::make()
+                    ->title('Customer Identifier Required')
+                    ->body('Please provide either Customer ID or Customer Email')
+                    ->danger()
+                    ->send();
+                return;
+            }
+
+            // Add validation for the provided identifier
+            if (!empty($this->data['search_customer_id'])) {
+                $validationRules['data.search_customer_id'] = 'required|string';
+            }
+            if (!empty($this->data['search_customer_email'])) {
+                $validationRules['data.search_customer_email'] = 'required|email';
+            }
+
+            $this->validate($validationRules);
 
             // Additional security check
             if (!$this->validateCompanyAccess($this->data['search_company_id'])) {
@@ -28,37 +46,42 @@ trait HandlesCustomerLookup
             }
 
             $companyId = $this->data['search_company_id'];
-            $customerEmail = $this->data['search_customer_email'];
+            $customerId = $this->data['search_customer_id'] ?? null;
+            $customerEmail = $this->data['search_customer_email'] ?? null;
 
             Log::info('Searching customer', [
                 'company_id' => $companyId,
+                'customer_id' => $customerId,
                 'customer_email' => $customerEmail
             ]);
 
             // Use the service to get customer summary for THIS SPECIFIC COMPANY
             $loyaltyService = app(LoyaltyService::class);
-            $customerSummary = $loyaltyService->getCustomerSummary($customerEmail, $companyId);
+            $customerSummary = $loyaltyService->getCustomerSummary($customerId, $customerEmail, $companyId);
 
             $this->customerBalance = $customerSummary['balance'];
             $this->customerTransactions = $customerSummary['transactions'];
 
             Log::info('Customer search completed', [
                 'company_id' => $companyId,
+                'customer_id' => $customerId,
                 'customer_email' => $customerEmail,
                 'balance' => $this->customerBalance,
                 'transaction_count' => count($this->customerTransactions)
             ]);
 
+            $customerIdentifier = $customerId ?? $customerEmail;
+
             if ($this->customerBalance === 0 && empty($this->customerTransactions)) {
                 Notification::make()
                     ->title('Customer Not Found')
-                    ->body("No transactions found for {$customerEmail} with this company")
+                    ->body("No transactions found for {$customerIdentifier} with this company")
                     ->warning()
                     ->send();
             } else {
                 Notification::make()
                     ->title('Customer Found!')
-                    ->body("Found {$this->customerBalance} points and " . count($this->customerTransactions) . " transactions for this company")
+                    ->body("Found {$this->customerBalance} points and " . count($this->customerTransactions) . " transactions for {$customerIdentifier} with this company")
                     ->success()
                     ->send();
             }

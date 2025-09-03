@@ -1,31 +1,20 @@
 <?php
-
 namespace App\Filament\Pages\Concerns;
 
-use App\Models\Company;
-use Illuminate\Support\Facades\Auth;
+use App\Traits\HasRoleHelpers;
 use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\Auth;
 
 trait HandlesCompanyAccess
 {
+    use HasRoleHelpers;
+
     /**
      * Initialize form with default company values
      */
     public function initializeForm(): void
     {
-        $user = Auth::user();
-        $availableCompanies = $this->getAvailableCompanies();
-        
-        // Pre-fill with appropriate company based on user role
-        $defaultCompanyId = null;
-        
-        if ($this->isSuperAdmin($user)) {
-            // For superadmin, use first available company
-            $defaultCompanyId = $availableCompanies->first()?->id;
-        } elseif ($this->isHandler($user)) {
-            // For handler, use their first company
-            $defaultCompanyId = $user->companies->first()?->id;
-        }
+        $defaultCompanyId = $this->getDefaultCompanyId();
 
         $this->form->fill([
             'company_id' => $defaultCompanyId,
@@ -33,15 +22,6 @@ trait HandlesCompanyAccess
             'redeem_company_id' => $defaultCompanyId,
         ]);
     }
-
-
-    /**
-     * Get company options for select fields based on user permissions
-     */
-
-    /**
-     * Check if user can access a specific company
-     */
 
     /**
      * Validate company access and show notification if denied
