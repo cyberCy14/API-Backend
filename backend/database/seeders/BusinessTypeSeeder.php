@@ -46,7 +46,10 @@ class BusinessTypeSeeder extends Seeder
         ];
 
         foreach ($businessTypes as $businessType) {
-            BusinessType::create($businessType);
+            BusinessType::updateOrCreate(
+                ['type' => $businessType['type']], // unique field
+                ['description' => $businessType['description'], 'is_active' => true]
+            );
         }
     }
 }

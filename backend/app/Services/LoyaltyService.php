@@ -146,27 +146,35 @@ class LoyaltyService
     /**
      * Generate QR code for transaction
      */
-    public function generateTransactionQr(CustomerPoint $transaction, string $webhookUrl): string
-    {
-        $qrCode = QrCode::format('png')
-            ->size(300)
-            ->margin(2)
-            ->errorCorrection('M')
-            ->generate($webhookUrl);
+public function generateTransactionQr(CustomerPoint $transaction): string
+{
+    $qrData = json_encode([
+        'transaction_id' => $transaction->transaction_id,
+        'customer_email' => $transaction->customer_email,
+        'points_earned' => $transaction->points_earned,
+        'purchase_amount' => $transaction->purchase_amount,
+        'status' => $transaction->status,
+    ]);
 
-        $qrFileName = 'qr-codes/' . $transaction->transaction_id . '.png';
+    $qrCode = QrCode::format('png')
+        ->size(300)
+        ->margin(2)
+        ->errorCorrection('M')
+        ->generate($qrData);
 
-        if (!Storage::disk('public')->exists('qr-codes')) {
-            Storage::disk('public')->makeDirectory('qr-codes');
-        }
+    $qrFileName = 'qr-codes/' . $transaction->transaction_id . '.png';
 
-        Storage::disk('public')->put($qrFileName, $qrCode);
-
-        // Update the transaction with QR code path
-        $transaction->update(['qr_code_path' => $qrFileName]);
-
-        return asset('storage/' . $qrFileName);
+    if (!Storage::disk('public')->exists('qr-codes')) {
+        Storage::disk('public')->makeDirectory('qr-codes');
     }
+
+    Storage::disk('public')->put($qrFileName, $qrCode);
+
+    $transaction->update(['qr_code_path' => $qrFileName]);
+
+    return asset('storage/' . $qrFileName);
+}
+
 
     /**
      * Confirm earning transaction

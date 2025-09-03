@@ -49,10 +49,23 @@ return new class extends Migration
             $table->index('status');
         });
 
-        // Add a check constraint (works in PostgreSQL, MySQL 8+, MariaDB 10.2+)
-        DB::statement(
-            'ALTER TABLE customer_points ADD CONSTRAINT customer_identifier_check CHECK ((customer_id IS NOT NULL) OR (customer_email IS NOT NULL))'
-        );
+        // ✅ Add constraint only for databases that support it
+        if (DB::getDriverName() === 'sqlite') {
+            // SQLite allows CHECK constraints if added when creating table,
+            // so we simulate it with raw SQL
+            DB::statement(
+                "CREATE TEMP TRIGGER customer_points_customer_check
+                 BEFORE INSERT ON customer_points
+                 WHEN NEW.customer_id IS NULL AND NEW.customer_email IS NULL
+                 BEGIN
+                   SELECT RAISE(FAIL, 'customer_id or customer_email must be provided');
+                 END;"
+            );
+        } else {
+            DB::statement(
+                'ALTER TABLE customer_points ADD CONSTRAINT customer_identifier_check CHECK ((customer_id IS NOT NULL) OR (customer_email IS NOT NULL))'
+            );
+        }
     }
 
     /**
@@ -60,7 +73,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Drop the table completely (constraints and indexes will be dropped automatically)
+        if (DB::getDriverName() === 'sqlite') {
+            DB::statement('DROP TRIGGER IF EXISTS customer_points_customer_check');
+        }
+
         Schema::dropIfExists('customer_points');
     }
 };

@@ -92,13 +92,32 @@ trait HandlesPointRedemption
             ]);
 
             // Generate the webhook URL for redemption confirmation
-            $webhookUrl = url('loyalty/confirm-redemption/' . $transactionId);
+            //$webhookUrl = url('loyalty/confirm-redemption/' . $transactionId);
+
             
+            // $qrCode = QrCode::format('png')
+            //     ->size(300)
+            //     ->margin(2)
+            //     ->errorCorrection('M')
+            //     ->generate($webhookUrl);
+
+            $payload = [
+                'transaction_id' => $transactionId,
+                'company_id' => $companyId,
+                'customer_id' => $customerId,
+                'customer_email' => $customerEmail,
+                'redeem_points' => $redeemPoints,
+                'redemption_description' => $this->data['redemption_description'],
+                'created_by' => Auth::id(),
+            ];
+
+            $jsonPayload = json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
             $qrCode = QrCode::format('png')
                 ->size(300)
                 ->margin(2)
                 ->errorCorrection('M')
-                ->generate($webhookUrl);
+                ->generate($jsonPayload);
 
             $qrFileName = 'qr-codes/' . $transactionId . '.png';
 
@@ -112,10 +131,11 @@ trait HandlesPointRedemption
 
             $this->redemptionQrPath = asset('storage/' . $qrFileName);
             
-            Log::info('Redemption QR Code generated successfully with webhook URL', [
+            Log::info('Redemption QR Code generated successfully with JSON Payload', [
                 'transaction_id' => $transactionId,
                 'file_path' => $qrFileName,
-                'webhook_url' => $webhookUrl,
+                'qr_payload' => $jsonPayload,
+                // 'webhook_url' => $webhookUrl,
                 'company_id' => $companyId,
                 'customer_balance_before' => $eligibility['current_balance']
             ]);
