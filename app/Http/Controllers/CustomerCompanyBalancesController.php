@@ -10,45 +10,6 @@ use Illuminate\Support\Facades\Auth;
 
 class CustomerCompanyBalancesController extends Controller
 {
-//  public function index(Request $request)
-// {
-//     $customerId = $request->get('customer_id');
-
-//     $totalBalances = CustomerPoint::select('company_id', 'customer_id', 'balance')
-//         ->with('company')
-//         ->when($customerId, function ($query) use ($customerId) {
-//             $query->where('customer_id', $customerId);
-//         })
-//         ->whereIn('id', function ($subQuery) use ($customerId) {
-//             $subQuery->selectRaw('MAX(id)')
-//                 ->from('customer_points')
-//                 ->when($customerId, function ($subQ) use ($customerId) {
-//                     $subQ->where('customer_id', $customerId);
-//                 })
-//                 ->groupBy('company_id', 'customer_id');
-//         })
-//         ->get();
-
-//     foreach ($totalBalances as $balance) {
-//         if (!is_null($balance->customer_id)) {
-//             CustomerCompanyBalance::updateOrCreate(
-//                 [
-//                     'customer_id' => $balance->customer_id,
-//                     'company_id' => $balance->company_id
-//                 ],
-//                 [
-//                     'total_balance' => $balance->balance
-//                 ]
-//             );
-//         }
-//     }
-
-//     return response()->json([
-//         'data' => $totalBalances
-//     ]);
-// }
-
-
 public function index(Request $request)
 {
     $customerId = Auth::id();

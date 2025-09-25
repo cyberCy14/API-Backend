@@ -16,7 +16,6 @@ class Company extends Model
 {
     use HasFactory;
     
-    // fix: correct table property name
     protected $table = 'companies';
 
     protected $fillable = [

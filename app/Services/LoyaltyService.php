@@ -168,7 +168,6 @@ class LoyaltyService
      */
 public function generateTransactionQr(CustomerPoint $transaction, ?string $customPayload = null): string
 {
-    // 👇 Refresh from DB to ensure balance is present
     $transaction = $transaction->fresh();
 
     $qrData = $customPayload ?? json_encode([
@@ -179,7 +178,7 @@ public function generateTransactionQr(CustomerPoint $transaction, ?string $custo
         'company_id'       => $transaction->company_id,
         'company_name'     => $transaction->company->name ?? null,
         'points'           => $transaction->points_earned,
-        'balance'          => $transaction->balance, // ✅ should always be numeric
+        'balance'          => $transaction->balance, 
         'status'           => $transaction->status,
         'date'             => now()->toDateTimeString(),
     ]);
@@ -220,10 +219,8 @@ public function confirmEarning(string $transactionId): ?CustomerPoint
         return null;
     }
 
-    // Perform the update
     $transaction->creditPoints();
 
-    // Return the transaction object itself (with updated status)
     return $transaction->fresh();
 }
 
@@ -232,7 +229,6 @@ public function confirmEarning(string $transactionId): ?CustomerPoint
     /**
      * Confirm redemption transaction
      */
-  // App/Services/LoyaltyService.php
 
 public function confirmRedemption(string $transactionId): ?CustomerPoint
 {
@@ -242,14 +238,14 @@ public function confirmRedemption(string $transactionId): ?CustomerPoint
         ->first();
 
     if (!$transaction) {
-        return null; // not found
+        return null; 
     }
 
     if ($transaction->redeemPoints()) {
-        return $transaction; // return the updated transaction model
+        return $transaction; 
     }
 
-    return null; // failed redemption (already confirmed or insufficient points)
+    return null; 
 }
 
 }

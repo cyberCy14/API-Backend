@@ -58,7 +58,6 @@ class LoyaltyProgram extends Model
 
     public function isValid(): bool
     {
-        // Check if the program is active and within the date range
         return $this->is_active && 
                (!$this->start_date || $this->start_date <= now()) && 
                (!$this->end_date || $this->end_date >= now());

@@ -89,47 +89,6 @@ class CustomerPoint extends Model
         return $query->where('transaction_type', 'redemption');
     }
 
-//   public static function getCustomerBalance(?string $customerId, ?string $email, int $companyId): int
-// {
-//     $earned = self::where('company_id', $companyId)
-//         ->where('transaction_type', 'earning')
-//         ->where('status', 'completed', 'credited')   
-//         ->when($customerId, fn($q) => $q->where('customer_id', $customerId))
-//         ->when(!$customerId && $email, fn($q) => $q->where('customer_email', $email))
-//         ->sum('points_earned');
-
-//     $redeemed = self::where('company_id', $companyId)
-//         ->where('transaction_type', 'redemption')
-//         ->where('status', 'completed', 'redeemed')   
-//         ->when($customerId, fn($q) => $q->where('customer_id', $customerId))
-//         ->when(!$customerId && $email, fn($q) => $q->where('customer_email', $email))
-//         ->sum('points_earned');
-
-//     return $earned - $redeemed;
-// }
-
-// public static function getCustomerBalance(?string $customerId, ?string $email, int $companyId): int
-// {
-//     $earned = self::where('company_id', $companyId)
-//         ->where('transaction_type', 'earning')
-//         ->whereIn('status', ['completed', 'credited'])
-//         ->when($customerId, fn($q) => $q->where('customer_id', $customerId))
-//         ->when(!$customerId && $email, fn($q) => $q->where('customer_email', $email))
-//         ->sum('points_earned');
-
-//     $redeemed = self::where('company_id', $companyId)
-//         ->where('transaction_type', 'redemption')
-//         ->whereIn('status', ['completed', 'redeemed'])
-//         ->when($customerId, fn($q) => $q->where('customer_id', $customerId))
-//         ->when(!$customerId && $email, fn($q) => $q->where('customer_email', $email))
-//         ->sum('points_earned');
-
-//     // ensure redeems are always treated as positive
-//     $redeemed = abs($redeemed);
-
-//     return $earned - $redeemed;
-// }
-
 public static function getCustomerBalance(?string $customerId, ?string $email, int $companyId): int
 {
     $earned = self::where('company_id',$companyId)
@@ -164,9 +123,9 @@ public static function getCustomerBalance(?string $customerId, ?string $email, i
         return $query->get();
     }
 
-    public function creditPoints(): bool
+        public function creditPoints(): bool
     {
-        if ($this->status === 'completed' && $this->transaction_type === 'earning') {
+        if ($this->status === 'pending' && $this->transaction_type === 'earning') {
             $this->update([
                 'status' => 'credited',
                 'credited_at' => now()
@@ -186,7 +145,8 @@ public static function getCustomerBalance(?string $customerId, ?string $email, i
 
     public function redeemPoints(): bool
     {
-        if ($this->status === 'completed' && $this->transaction_type === 'redemption') {
+        if ($this->status === 'pending' && $this->transaction_type === 'redemption') {
+            // First verify customer has enough points for THIS SPECIFIC COMPANY
             $currentBalance = self::getCustomerBalance(
                 $this->customer_id, 
                 $this->customer_email, 
@@ -215,9 +175,7 @@ public static function getCustomerBalance(?string $customerId, ?string $email, i
         return false;
     }
 
-    /**
-     * Get the customer identifier (priority: customer_id, fallback: email)
-     */
+
     public function getCustomerIdentifierAttribute(): ?string
     {
         return $this->customer_id ?: $this->customer_email;

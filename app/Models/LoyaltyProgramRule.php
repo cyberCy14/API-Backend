@@ -26,8 +26,8 @@ class LoyaltyProgramRule extends Model
     ];
 
     protected $casts = [
-        'points_earned' => 'decimal:2',      // Add this
-        'amount_per_point' => 'decimal:2',   // Add this
+        'points_earned' => 'decimal:2',     
+        'amount_per_point' => 'decimal:2',  
         'is_active' => 'boolean',
         'active_from_date' => 'date',
         'active_to_date' => 'date',
@@ -37,15 +37,12 @@ class LoyaltyProgramRule extends Model
         'usage_limit' => 'integer',
     ];
 
-    // Add this missing method
     public function calculatePoints(float $purchaseAmount, ?int $categoryId = null, ?int $itemId = null): float
     {
-        // Check if rule is active
         if (!$this->is_active) {
             return 0;
         }
 
-        // Check date validity
         $now = now();
         if ($this->active_from_date && $now->lt($this->active_from_date)) {
             return 0;
@@ -54,12 +51,10 @@ class LoyaltyProgramRule extends Model
             return 0;
         }
 
-        // Check minimum purchase amount
         if ($this->min_purchase_amount && $purchaseAmount < $this->min_purchase_amount) {
             return 0;
         }
 
-        // Check category/item restrictions
         if ($this->product_category_id && $this->product_category_id !== $categoryId) {
             return 0;
         }

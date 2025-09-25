@@ -15,9 +15,7 @@ class LoyaltyController extends Controller
         $this->loyaltyService = $loyaltyService;
     }
 
-    /**
-     * Calculate balance for a customer within a company
-     */
+  
     private function calculateBalance(CustomerPoint $transaction): int
     {
         $customerId = $transaction->customer_id;
@@ -51,67 +49,6 @@ class LoyaltyController extends Controller
         return  $totalEarned - $totalRedeemed;
     }
 
-
-    
-
-
-    /**
-     * Mark an earning transaction as completed
-     */
-    // public function confirmEarning($transactionId)
-    // {
-    //     $transaction = CustomerPoint::where('transaction_id', $transactionId)->first();
-
-    //     if (!$transaction) {
-    //         return response()->json(['error' => 'Transaction not found'], 404);
-    //     }
-
-    //     $transaction->status = 'completed';
-    //     $transaction->credited_at = now();
-    //     $transaction->save();
-
-    //     $balance = $this->calculateBalance($transaction);
-
-    //     return response()->json([
-    //         'transaction_type' => 'earning',
-    //         'customer' => $transaction->customer_id ?? $transaction->customer_email,
-    //         'company' => $transaction->company->company_name ?? null,
-    //         'points' => $transaction->points_earned,
-    //         'balance' => $transaction->balance,
-    //         'status' => $transaction->status,
-    //         'transaction_id' => $transaction->transaction_id,
-    //         'date' => $transaction->created_at,
-    //     ]);
-    // }
-
-    // /**
-    //  * Mark a redemption transaction as completed
-    //  */
-    // public function confirmRedemption($transactionId)
-    // {
-    //     $transaction = CustomerPoint::where('transaction_id', $transactionId)->first();
-
-    //     if (!$transaction) {
-    //         return response()->json(['error' => 'Transaction not found'], 404);
-    //     }
-
-    //     $transaction->status = 'completed';
-    //     $transaction->redeemed_at = now();
-    //     $transaction->save();
-
-    //     $balance = $this->calculateBalance($transaction);
-
-    //     return response()->json([
-    //         'transaction_type' => 'redemption',
-    //         'customer' => $transaction->customer_id ?? $transaction->customer_email,
-    //         'company' => $transaction->company->company_name ?? null,
-    //         'points' => $transaction->points_earned,
-    //         'balance' => $transaction->balance,
-    //         'status' => $transaction->status,
-    //         'transaction_id' => $transaction->transaction_id,
-    //         'date' => $transaction->created_at,
-    //     ]);
-    // }
 
 public function confirmEarning(string $transactionId)
     {
@@ -156,7 +93,7 @@ public function confirmEarning(string $transactionId)
         return response()->json([
             'message'        => 'Redemption confirmed successfully',
             'transaction_id' => $transaction->transaction_id,
-            'points'         => $transaction->points_earned, // usually negative for redeem
+            'points'         => $transaction->points_earned,
             'balance'        => $balance,
             'status'         => $transaction->status,
             'customer'       => $transaction->customer_email ?? $transaction->customer_id,

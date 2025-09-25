@@ -16,6 +16,7 @@ use App\Http\Controllers\RecentActivityController;
 use App\Http\Controllers\Api\LoyaltyTransactionController;
 use App\Http\Controllers\CustomerCompanyBalancesController;
 use App\Http\Controllers\CustomerPointsController;
+use App\Http\Controllers\FinancialReportController;
 
 
 Route::post('register', [AuthController::class, 'register']);
@@ -64,4 +65,12 @@ Route::prefix('loyalty')->group(function () {
 
 
 
+    //BUSINESS FINANCIAL REPORT
+
+    Route::get('/financial-reports', [FinancialReportController::class, 'index']);
+    Route::post('/financial-reports', [FinancialReportController::class, 'store']);
+    Route::get('/financial-reports/{financialReport}', [FinancialReportController::class, 'show']);
+
+
+    Route::get('/financial-reports-summary', [FinancialReportController::class, 'summary']);
 });
