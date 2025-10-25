@@ -46,6 +46,14 @@ class LoyaltyProgram extends Model
         return $this->belongsTo(Company::class);
     }
 
+    public function members() {
+        return $this->belongsToMany(\App\Models\User::class)
+                ->withPivot(['enrolled_at']);
+    }
+    public function transactions() {
+        return $this->hasMany(\App\Models\LoyaltyTransaction::class);
+    }
+
     public function rules()
     {
         return $this->hasMany(LoyaltyProgramRule::class);

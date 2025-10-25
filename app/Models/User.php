@@ -75,10 +75,15 @@ class User extends Authenticatable
             ->withTimestamps(); 
     }
 
-    /**
-     * Check if user is a superadmin
-     * This method provides a fallback if Spatie Permission isn't working
-     */
+    public function loyaltyPrograms() {
+    return $this->belongsToMany(\App\Models\LoyaltyProgram::class)
+                ->withPivot(['enrolled_at']);
+    }
+    
+    public function loyaltyTransactions() {
+        return $this->hasMany(\App\Models\LoyaltyTransaction::class);
+    }
+
     public function isSuperAdmin(): bool
     {
         try {

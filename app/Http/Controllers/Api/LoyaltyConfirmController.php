@@ -73,8 +73,6 @@ public function cancelRedeem(string $transactionId): \Illuminate\Http\JsonRespon
 }
 
 
-
-
     public function confirmEarning(string $transactionId): JsonResponse
     {
         try {

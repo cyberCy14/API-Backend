@@ -68,10 +68,8 @@ class LoyaltyService
         $companyId     = (int) $data['company_id'];
         $pointsEarned  = (int) $data['points_earned'];
 
-        // ✅ COMPLETED-only balance BEFORE this earning
         $before = $this->getAvailableBalance($customerId, $customerEmail, $companyId);
 
-        // Earn is finalized immediately (as per your setup)
         $after  = $before + $pointsEarned;
 
         return \App\Models\CustomerPoint::create([
@@ -80,11 +78,11 @@ class LoyaltyService
             'company_id'             => $companyId,
             'loyalty_program_id'     => $data['loyalty_program_id'] ?? null,
             'transaction_id'         => \Illuminate\Support\Str::uuid(),
-            'points_earned'          => $pointsEarned,                 // positive
+            'points_earned'          => $pointsEarned,                
             'purchase_amount'        => $data['purchase_amount'] ?? 0,
             'transaction_type'       => 'earning',
-            'status'                 => 'completed',                    // finalized
-            'balance'                => $after,                         // ✅ snapshot AFTER, completed-only
+            'status'                 => 'completed',                    
+            'balance'                => $after,                         
             'rule_breakdown'         => $data['rule_breakdown'] ?? [],
             'transaction_date'       => now(),
         ]);
@@ -109,9 +107,8 @@ class LoyaltyService
         $customerId    = $data['customer_id'] ?? null;
         $customerEmail = $data['customer_email'] ?? null;
         $companyId     = $data['company_id'];
-        $pointsDebit   = -abs($data['redeem_points']); // negative on purpose
+        $pointsDebit   = -abs($data['redeem_points']); 
 
-        // Snapshot of available (completed-only) balance before applying
         $availableBalance = $this->getAvailableBalance($customerId, $customerEmail, $companyId);
 
         return CustomerPoint::create([
@@ -119,12 +116,12 @@ class LoyaltyService
             'customer_email'         => $customerEmail,
             'company_id'             => $companyId,
             'transaction_id'         => $data['transaction_id'] ?? Str::uuid(),
-            'points_earned'          => $pointsDebit,              // negative but PENDING → no effect on totals
+            'points_earned'          => $pointsDebit,              
             'transaction_type'       => 'redemption',
             'status'                 => 'pending',
             'redemption_description' => $data['redemption_description'] ?? null,
             'transaction_date'       => now(),
-            'balance'                => $availableBalance,         // snapshot for display
+            'balance'                => $availableBalance,       
         ]);
     }
 
@@ -264,7 +261,12 @@ class LoyaltyService
             return 0;
         }
 
+
+        
+
         return (int) $query->sum('points_earned'); 
     }
+
+    
     
 }
