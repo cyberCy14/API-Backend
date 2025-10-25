@@ -21,7 +21,7 @@ class CustomerPoint extends Model
         'purchase_amount',
         'transaction_type',
         'status',
-        'balance',
+        'balance', 
         'rule_breakdown',
         'credited_at',
         'redeemed_at',
@@ -43,15 +43,14 @@ class CustomerPoint extends Model
 
     public function company(): BelongsTo
     {
-        return $this->belongsTo(Company::class);
+        return $this->belongsTo(\App\Models\Company::class);
     }
 
     public function loyaltyProgram(): BelongsTo
     {
-        return $this->belongsTo(LoyaltyProgram::class, 'loyalty_program_id');
+        return $this->belongsTo(\App\Models\LoyaltyProgram::class, 'loyalty_program_id');
     }
 
-    // Updated scopes to handle both customer_id and email
     public function scopeForCustomer(Builder $query, ?string $customerId = null, ?string $email = null): Builder
     {
         return $query->where(function ($q) use ($customerId, $email) {
@@ -89,24 +88,57 @@ class CustomerPoint extends Model
         return $query->where('transaction_type', 'redemption');
     }
 
-public static function getCustomerBalance(?string $customerId, ?string $email, int $companyId): int
-{
-    $earned = self::where('company_id',$companyId)
-        ->where('transaction_type','earning')
-        ->whereIn('status',['completed','credited'])
-        ->when($customerId,fn($q)=>$q->where('customer_id',$customerId))
-        ->when(!$customerId && $email,fn($q)=>$q->where('customer_email',$email))
-        ->sum('points_earned');
+    public static function availableBalance(?string $customerId, ?string $email, int $companyId): int
+    {
+        $q = self::query()->where('company_id', $companyId)->where('status', 'completed');
 
-    $redeemed = self::where('company_id',$companyId)
-        ->where('transaction_type','redemption')
-        ->whereIn('status',['completed','redeemed'])
-        ->when($customerId,fn($q)=>$q->where('customer_id',$customerId))
-        ->when(!$customerId && $email,fn($q)=>$q->where('customer_email',$email))
-        ->sum('points_earned');
+        if ($customerId) $q->where('customer_id', $customerId);
+        elseif ($email) $q->where('customer_email', $email);
+        else return 0;
 
-    return $earned - abs($redeemed);
-}
+        return (int) $q->sum('points_earned'); 
+    }
+
+    public function getCustomerSummary(?string $customerId, ?string $customerEmail, int $companyId): array
+    {
+        $balance = self::availableBalance($customerId, $customerEmail, $companyId);
+
+        $transactions = CustomerPoint::getCustomerTransactionHistory($customerId, $customerEmail, $companyId);
+
+        return [
+            'balance' => $balance,
+            'transactions' => $transactions->map(function ($t) {
+                return [
+                    'id' => $t->id,
+                    'transaction_id' => $t->transaction_id,
+                    'transaction_type' => $t->transaction_type,
+                    'points_earned' => $t->points_earned,
+                    'status' => $t->status,
+                    'created_at' => $t->created_at->format('Y-m-d H:i:s'),
+                    'redemption_description' => $t->redemption_description ?: 'Points earned from purchase',
+                    'purchase_amount' => $t->purchase_amount,
+                    'balance' => $t->balance, 
+                ];
+            })->toArray()
+        ];
+    }
+
+
+    public function scopeCompleted(Builder $q): Builder
+    {
+        return $q->where('status', 'completed');
+    }
+
+    public function scopePending(Builder $q): Builder
+    {
+        return $q->where('status', 'pending');
+    }
+
+    public function scopeCancelled(Builder $q): Builder
+    {
+        return $q->where('status', 'cancelled');
+    }
+
 
     public static function getCustomerTransactionHistory(?string $customerId, ?string $email, int $companyId)
     {
@@ -121,9 +153,26 @@ public static function getCustomerBalance(?string $customerId, ?string $email, i
         }
 
         return $query->get();
+        // return $query->where('status', '!=', 'cancelled')->get();
     }
 
-        public function creditPoints(): bool
+    public static function getCustomerTransactionHistoryForCustomer(?string $customerId, ?string $email, int $companyId)
+    {
+        $query = self::where('company_id', $companyId)
+            ->visibleToCustomer()       
+            ->with(['loyaltyProgram', 'company'])
+            ->orderBy('created_at', 'desc');
+
+        if ($customerId) {
+            $query->where('customer_id', $customerId);
+        } elseif ($email) {
+            $query->where('customer_email', $email);
+        }
+
+        return $query->get();
+    }
+
+    public function creditPoints(): bool
     {
         if ($this->status === 'pending' && $this->transaction_type === 'earning') {
             $this->update([
@@ -146,7 +195,6 @@ public static function getCustomerBalance(?string $customerId, ?string $email, i
     public function redeemPoints(): bool
     {
         if ($this->status === 'pending' && $this->transaction_type === 'redemption') {
-            // First verify customer has enough points for THIS SPECIFIC COMPANY
             $currentBalance = self::getCustomerBalance(
                 $this->customer_id, 
                 $this->customer_email, 
@@ -181,43 +229,47 @@ public static function getCustomerBalance(?string $customerId, ?string $email, i
         return $this->customer_id ?: $this->customer_email;
     }
 
-    /**
-     * Check if customer has valid identifier
-     */
+  
     public function hasValidCustomerIdentifier(): bool
     {
         return !empty($this->customer_id) || !empty($this->customer_email);
     }
 
 
-
-
     protected static function booted()
     {
-        static::created(function ($customerPoint) {
-            $customerPoint->updateCompanyBalance();
-        });
-
-        static::updated(function ($customerPoint) {
-            $customerPoint->updateCompanyBalance();
-        });
+        static::created(fn ($cp) => $cp->updateCompanyBalance());
+        static::updated(fn ($cp) => $cp->updateCompanyBalance());
     }
 
-    /**
-     * Helper to update the balance in customer_company_balances table
-     */
     protected function updateCompanyBalance()
     {
+        if ($this->status !== 'completed') return;
+
         if ($this->hasValidCustomerIdentifier() && $this->company_id) {
+            $currentTotalBalance = self::availableBalance(
+                $this->customer_id,
+                $this->customer_email,
+                $this->company_id
+            );
+
             \App\Models\CustomerCompanyBalance::updateOrCreate(
-                [
-                    'customer_id' => $this->customer_id, 
-                    'company_id'  => $this->company_id
-                ],
-                [
-                    'total_balance' => $this->balance
-                ]
+                ['customer_id' => $this->customer_id, 'company_id' => $this->company_id],
+                ['total_balance' => $currentTotalBalance]
             );
         }
-}
+    }
+
+    public function getStatusLabelAttribute()
+    {
+        return $this->attributes['status'] === 'expired'
+            ? 'cancelled'
+            : $this->attributes['status'];
+    }
+
+    public function scopeVisibleToCustomer($query)
+    {
+        return $query->whereIn('status', ['completed']);
+    }
+
 }

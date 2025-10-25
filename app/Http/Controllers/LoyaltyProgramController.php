@@ -11,10 +11,26 @@ class LoyaltyProgramController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
-        return LoyaltyProgram::all();
+    // public function index()
+    // {
+    //     return LoyaltyProgram::all();
+    // }
+
+    public function index(Request $request)
+{
+    $companyId = $request->query('company_id');
+
+    $query = \App\Models\LoyaltyProgram::query();
+
+    if ($companyId) {
+        $query->where('company_id', $companyId);
     }
+
+    $programs = $query->get();
+
+    return response()->json($programs);
+}
+
 
     /**
      * Store a newly created resource in storage.

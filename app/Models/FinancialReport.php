@@ -16,7 +16,6 @@ class FinancialReport extends Model
         'transaction_title',
         'type',
         'amount',
-        'transaction_date',
     ];
 
    

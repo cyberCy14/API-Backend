@@ -7,14 +7,40 @@ use Illuminate\Http\Request;
 
 class FinancialReportController extends Controller
 {
-   
-    public function index(Request $request)
-    {
-        $transactions = FinancialReport::where('user_id', $request->user()->id)
-            ->orderBy('transaction_date', 'desc')
+
+
+    public function index(Request $request){
+        $userId = $request->user()->id;
+
+        $transactions = FinancialReport::where('user_id', $userId)
+            ->orderBy('created_at', 'desc')
             ->get();
 
-        return response()->json($transactions);
+        //  $summary = [
+        //     'net_profit'  => FinancialReport::getNetProfit($userId),
+        //     'income'      => FinancialReport::getTotalIncome($userId),
+        //     'expense'     => FinancialReport::getTotalExpense($userId),
+        //     'assets'      => FinancialReport::getTotalAssets($userId),
+        //     'liabilities' => FinancialReport::getTotalLiabilities($userId),
+        // ];
+
+         $income = $transactions->where('type', 'income')->sum('amount');
+        $expense = $transactions->where('type', 'expense')->sum('amount');
+        $assets = $transactions->where('type', 'asset')->sum('amount');
+        $liabilities = $transactions->where('type', 'liability')->sum('amount');
+
+        $summary = [
+            'income'      => (float) $income,
+            'expense'     => (float) $expense,
+            'assets'      => (float) $assets,
+            'liabilities' => (float) $liabilities,
+            'net_profit'  => (float) ($income - $expense),
+        ];
+
+        return response()->json([
+            'transactions' => $transactions,
+            'summary' => $summary,
+        ]);
     }
 
  
@@ -24,7 +50,6 @@ class FinancialReportController extends Controller
             'transaction_title' => 'required|string|max:255',
             'type'              => 'required|in:income,expense,asset,liability',
             'amount'            => 'required|numeric|min:0',
-            'transaction_date'  => 'required|date_format:Y-m-d H:i:s',
         ]);
 
         $validated['user_id'] = $request->user()->id;
@@ -47,18 +72,18 @@ class FinancialReportController extends Controller
     }
 
 
-    public function summary(Request $request)
-    {
-        $userId = $request->user()->id;
+    // public function summary(Request $request)
+    // {
+    //     $userId = $request->user()->id;
 
-        $summary = [
-            'net_profit'  => FinancialReport::getNetProfit($userId),
-            'income'      => FinancialReport::getTotalIncome($userId),
-            'expense'     => FinancialReport::getTotalExpense($userId),
-            'assets'      => FinancialReport::getTotalAssets($userId),
-            'liabilities' => FinancialReport::getTotalLiabilities($userId),
-        ];
+    //     $summary = [
+    //         'net_profit'  => FinancialReport::getNetProfit($userId),
+    //         'income'      => FinancialReport::getTotalIncome($userId),
+    //         'expense'     => FinancialReport::getTotalExpense($userId),
+    //         'assets'      => FinancialReport::getTotalAssets($userId),
+    //         'liabilities' => FinancialReport::getTotalLiabilities($userId),
+    //     ];
 
-        return response()->json($summary);
-    }
+    //     return response()->json($summary);
+    // }
 }

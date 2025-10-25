@@ -4,7 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CompanyRequest;
-use App\Http\Resources\CompanyResource;
+// use App\Http\Resources\ApiCompanyResource;
+use App\Http\Resources\ApiCompanyResource;
 use App\Models\Company;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -20,7 +21,7 @@ class CompanyController extends Controller
     public function index(){
         $company = Company::with('users')->get();
         if($company->count() > 0){
-            return CompanyResource::collection($company);
+            return ApiCompanyResource::collection($company);
         }
         else{
             return response()->json(['message'=> 'Empty'],200);
@@ -78,7 +79,7 @@ class CompanyController extends Controller
         }
         $company->save();
 
-        return new CompanyResource($company);
+        return new ApiCompanyResource($company);
     }
     public function update(Request $request, Company $company){
         
@@ -128,14 +129,14 @@ class CompanyController extends Controller
             }
         $company->save();
 
-        return new CompanyResource($company);
+        return new ApiCompanyResource($company);
 
     }
 
-    public function show(Company $company): CompanyResource{
+    public function show(Company $company): ApiCompanyResource{
 
         $company->load('users');
-        return new CompanyResource($company);
+        return new ApiCompanyResource($company);
     }
     public function destroy(Company $company){
 

@@ -12,7 +12,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('loyalty_rewards', function (Blueprint $table) {
-            // Primary key
             $table->id();
 
 
@@ -21,12 +20,10 @@ return new class extends Migration
                 ->constrained('loyalty_program_rules')
                 ->nullOnDelete();
 
-            // Reward details
             $table->string('reward_name', 255);
             $table->text('description')->nullable();
             $table->string('reward_type', 50);
 
-            // Point cost and discount
             $table->decimal('point_cost', 10, 2);
             $table->decimal('discount_value', 10, 2)->nullable();
             $table->decimal('discount_percentage', 5, 2)->nullable();
@@ -39,15 +36,12 @@ return new class extends Migration
             
             $table->string('voucher_code', 100)->nullable();
 
-            // Status and limits
             $table->boolean('is_active')->default(true);
             $table->unsignedInteger('max_redemption_rate')->nullable();
             $table->unsignedInteger('expiration_days')->nullable();
 
-            // Timestamps
             $table->timestamps();
 
-            // Indexes
             $table->index(['reward_type', 'is_active']);
         });
     }

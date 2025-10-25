@@ -86,7 +86,7 @@ class LoyaltyProgramRule extends Model
 
     public function loyaltyProgram(): BelongsTo
     {
-        return $this->belongsTo(LoyaltyProgram::class);
+        return $this->belongsTo(LoyaltyProgram::class, 'loyalty_program_id');
     }
 
     public function rewards()

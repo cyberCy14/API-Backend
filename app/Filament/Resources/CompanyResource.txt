@@ -6,7 +6,6 @@ use App\Filament\Resources\CompanyResource\Pages;
 use App\Helpers\GetLocationDataHelper;
 use App\Models\Company;
 use Exception;
-use App\Models\BusinessType;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
@@ -131,36 +130,25 @@ class CompanyResource extends Resource
                 Forms\Components\FileUpload::make('company_logo')
                     ->image()
                     ->imageCropAspectRatio('1:1')
-                    ->maxSize(2048)
+                    ->maxSize(548)
                     ->directory('company_images')
                     ->disk('public')
                     ->visibility('public')
                     ->imageEditor()
                     ->imageEditorAspectRatios([
                         '1:1',
-                    ])
-                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/gif', 'image/svg+xml'])
-                    ->helperText('Maximum file size: 2MB. Supported formats: JPEG, PNG, GIF, SVG')
-                    ->imagePreviewHeight('250')
-                    ->imageResizeTargetWidth('400')
-                    ->imageResizeTargetHeight('400'),
+                    ]),
                     
                 Forms\Components\Select::make('business_type_id')
                     ->required()
                     ->relationship('businessType', 'type')
-                    ->getOptionLabelFromRecordUsing(fn ($record) => (string) ($record->type ?? 'N/A'))
                     ->preload()
                     ->searchable()
                     ->createOptionForm([
                         Forms\Components\TextInput::make('type')
                             ->required()
-                            ->maxLength(255)
-                            ->rule('unique:business_types,type'),
+                            ->maxLength(255),
                     ])
-                    ->createOptionUsing(function (array $data) {
-                        $bt = BusinessType::firstOrCreate(['type' => $data['type']]);
-                        return $bt->getKey();
-                    })
                     ->visible($isSuperadmin), // Only super_admin can change business type
                     
                 Forms\Components\Placeholder::make('business_type_display')
@@ -173,10 +161,6 @@ class CompanyResource extends Resource
                     ->multiple()
                     ->preload()
                     ->relationship('users', 'name')
-                    ->getOptionLabelFromRecordUsing(function ($record) {
-                        $label = $record->name ?? $record->email ?? null;
-                        return (string) ($label ?? ('User #' . $record->id));
-                    })
                     ->searchable()
                     ->visible(function() use ($user) {
                         // Double check - only show if user is NOT a handler

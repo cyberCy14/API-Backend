@@ -24,6 +24,7 @@ class PointCalculatorSchema
     {
         $user = Auth::user();
         $companyOptions = (new static())->getCompanyOptions($user);
+
         $isHandler = $livewire->isHandler($user);
 
         return [
@@ -44,28 +45,6 @@ class PointCalculatorSchema
             ->label('Earn Points')
             ->icon('heroicon-o-plus-circle')
             ->schema([
-                Section::make('Scan Customer QR Code')
-    ->description('Scan the customer\'s QR code to automatically identify and verify them')
-    ->schema([
-        // Camera Scanner Component
-        \Filament\Forms\Components\View::make('components.qr-scanner-simple')
-            ->label('Camera Scanner'),
-
-        // Show scanned customer info with original QR fields
-        Placeholder::make('scanned_customer_info')
-            ->label('Customer Verification Status')
-            ->content(function ($livewire) {
-                if (!empty($livewire->parsedQrData)) {
-                    $name = $livewire->scannedCustomerName ?? 'N/A';
-                    // Display the original fields from QR: "id" and "email"
-                    $id = $livewire->parsedQrData['id'] ?? $livewire->parsedQrData['customer_id'] ?? 'N/A';
-                    $email = $livewire->parsedQrData['email'] ?? $livewire->parsedQrData['customer_email'] ?? 'N/A';
-                    
-                    return "✅ Customer Verified\n\nName: {$name}\nID: {$id}\nEmail: {$email}";
-                }
-                return '⏳ Waiting for QR code scan...';
-            }),
-    ]),
                 Section::make('Select Company & Program')
                     ->schema([
                         Select::make('company_id')
@@ -80,6 +59,7 @@ class PointCalculatorSchema
                                     $set('company_id', null);
                                     return;
                                 }
+                                
                                 $set('loyalty_program_id', null);
                                 $livewire->resetCalculation();
                             }),
@@ -91,6 +71,7 @@ class PointCalculatorSchema
                                 if (!$companyId || !$livewire->canAccessCompany($companyId)) {
                                     return [];
                                 }
+
                                 return LoyaltyProgram::where('company_id', $companyId)
                                     ->whereHas('rules', fn($query) => $query->where('is_active', true))
                                     ->where('is_active', true)
@@ -118,7 +99,7 @@ class PointCalculatorSchema
 
                         TextInput::make('customer_id')
                             ->label('Customer ID')
-                            ->helperText('Auto-filled from QR scan or enter manually')
+                            ->helperText('Enter Customer ID (optional if email is provided)')
                             ->live(onBlur: true)
                             ->afterStateUpdated(function () use ($livewire) {
                                 $livewire->fetchCustomerEmail();
@@ -135,7 +116,7 @@ class PointCalculatorSchema
                         TextInput::make('customer_email')
                             ->label('Or Enter Customer Email Manually')
                             ->email()
-                            ->helperText('Auto-filled from QR scan or enter manually')
+                            ->helperText('Points will be credited to this customer (optional if Customer ID is provided)')
                             ->live(onBlur: true)
                             ->afterStateUpdated(fn () => $livewire->resetCalculation()),
                     ])
@@ -148,7 +129,9 @@ class PointCalculatorSchema
                             ->content(fn ($get, $livewire): string =>
                                 $livewire->calculatedPoints ?? 'Click "Calculate Points" to see results'
                             )
-                            ->extraAttributes(['class' => 'text-2xl font-bold text-green-600']),
+                            ->extraAttributes([
+                                'class' => 'text-2xl font-bold text-green-600'
+                            ]),
 
                         Placeholder::make('rule_breakdown')
                             ->label('Points Breakdown')
@@ -176,15 +159,15 @@ class PointCalculatorSchema
                             (empty($get('customer_id')) && empty($get('customer_email')))
                         ),
 
-                    Action::make('credit_points')
-                        ->label('Credit Points to Customer')
-                        ->icon('heroicon-o-check-circle')
+                    Action::make('generate_qr')
+                        ->label('Generate QR Code & Credit Points')
+                        ->icon('heroicon-o-qr-code')
                         ->color('success')
-                        ->action('creditPointsFromScan')
+                        ->action('generateQrAndCreditPoints')
                         ->visible(fn ($get, $livewire): bool => !empty($livewire->calculatedPoints))
                         ->requiresConfirmation()
                         ->modalHeading('Credit Points to Customer')
-                        ->modalDescription('This will immediately credit the calculated points to the customer account.'),
+                        ->modalDescription('This will generate a QR code. Scanning it will credit the points to the customer account.'),
                 ])->alignEnd(),
             ]);
     }
@@ -235,14 +218,24 @@ class PointCalculatorSchema
 
                 Section::make('Customer Information')
                     ->schema([
+                        // Placeholder::make('customer_balance')
+                        //     ->label('Current Points Balance')
+                        //     ->content(fn ($get, $livewire): string =>
+                        //         $livewire->customerBalance !== null
+                        //             ? number_format($livewire->customerBalance) . ' points'
+                        //             : 'Search for a customer to see their balance'
+                        //     )
                         Placeholder::make('customer_balance')
                             ->label('Current Points Balance')
-                            ->content(fn ($get, $livewire): string =>
-                                $livewire->customerBalance !== null
-                                    ? number_format($livewire->customerBalance) . ' points'
+                            ->content(fn ($get, $livewire): string => 
+                                !empty($livewire->customerTransactions)
+                                    ? number_format(collect($livewire->customerTransactions)->sum('balance')) . ' points'
                                     : 'Search for a customer to see their balance'
                             )
-                            ->extraAttributes(['class' => 'text-2xl font-bold text-blue-600']),
+
+                            ->extraAttributes([
+                                'class' => 'text-2xl font-bold text-blue-600'
+                            ]),
 
                         Placeholder::make('transaction_count')
                             ->label('Total Transactions')
@@ -302,6 +295,7 @@ class PointCalculatorSchema
                                     return [];
                                 }
                         
+                                // Fixed SQL query with qualified columns to avoid ambiguity
                                 return LoyaltyProgram::where('company_id', $companyId)
                                     ->where('loyalty_programs.is_active', true)
                                     ->whereHas('rewards', function ($query) {
@@ -311,7 +305,7 @@ class PointCalculatorSchema
                                     ->pluck('program_name', 'id');
                             })  
                             ->required()
-                            ->live()
+                            ->live()  // <-- Now correctly chained to Select (or ->reactive() if on Filament v2)
                             ->afterStateUpdated(function (callable $set) {
                                 $set('reward_id', null);
                                 $set('redeem_points', null);
@@ -319,6 +313,7 @@ class PointCalculatorSchema
                             })
                             ->disabled(fn (Get $get): bool => !$get('redeem_company_id'))
                             ->helperText('Only programs with active rewards are shown'),
+                        
 
                         TextInput::make('redeem_customer_id')
                             ->label('Customer ID')
@@ -371,6 +366,7 @@ class PointCalculatorSchema
                                         $set('redemption_description', $reward->reward_name . ' - ' . ($reward->description ?: 'Reward redemption'));
                                     }
                                 } else {
+                                    // Clear fields when no reward is selected
                                     $set('redeem_points', null);
                                     $set('redemption_description', null);
                                 }
@@ -439,16 +435,27 @@ class PointCalculatorSchema
                     ])
                     ->columns(2),
 
+                // Customer Balance Check (always visible when customer is selected)
                 Section::make('Customer Balance')
                     ->schema([
+                        // Placeholder::make('current_balance_display')
+                        //     ->label('Current Points Balance')
+                        //     ->content(fn ($get, $livewire): string => 
+                        //         $livewire->redemptionCustomerBalance !== null 
+                        //             ? number_format($livewire->redemptionCustomerBalance) . ' points'
+                        //             : 'Select customer to check balance'
+                        //     )
                         Placeholder::make('current_balance_display')
-                            ->label('Current Points Balance')
-                            ->content(fn ($get, $livewire): string => 
-                                $livewire->redemptionCustomerBalance !== null 
-                                    ? number_format($livewire->redemptionCustomerBalance) . ' points'
-                                    : 'Select customer to check balance'
-                            )
-                            ->extraAttributes(['class' => 'text-2xl font-bold text-blue-600']),
+                        ->label('Current Points Balance')
+                        ->content(fn ($get, $livewire): string => 
+                            !empty($livewire->redemptionCustomerTransactions)
+                                ? number_format(collect($livewire->redemptionCustomerTransactions)->sum('balance')) . ' points'
+                                : 'Select customer to check balance'
+                        )
+
+                            ->extraAttributes([
+                                'class' => 'text-2xl font-bold text-blue-600'
+                            ]),
 
                         Placeholder::make('redemption_validity')
                             ->label('Redemption Status')
@@ -503,6 +510,7 @@ class PointCalculatorSchema
                         ->color('warning')
                         ->action('generateRedemptionQr')
                         ->disabled(function (Get $get, $livewire) {
+                            // Basic validation
                             if (empty($get('redeem_company_id')) ||
                                 empty($get('loyalty_program_id_redeem')) ||
                                 (empty($get('redeem_customer_id')) && empty($get('redeem_customer_email'))) ||
@@ -511,6 +519,7 @@ class PointCalculatorSchema
                                 return true;
                             }
 
+                            // Check if customer has sufficient balance
                             $points = $get('redeem_points');
                             $balance = $livewire->redemptionCustomerBalance;
                             

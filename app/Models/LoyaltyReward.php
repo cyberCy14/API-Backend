@@ -41,10 +41,11 @@ class LoyaltyReward extends Model
     /**
      * Reward belongs to a loyalty program.
      */
-    public function LoyaltyProgramRule(): BelongsTo
+    public function loyaltyProgramRule(): BelongsTo
     {
-        return $this->belongsTo(LoyaltyProgramRule::class);
+        return $this->belongsTo(LoyaltyProgramRule::class, 'loyalty_program_rule_id'); 
     }
+
 
     /**
      * Reward may be linked to a product item.
@@ -59,4 +60,20 @@ class LoyaltyReward extends Model
         return $this->belongsToMany(User::class)
             ->withTimestamps();
 }
+//     public function rewards()
+//     {
+//         return $this->hasManyThrough(LoyaltyReward::class, 
+//         LoyaltyProgramRule::class,
+//         'loyalty_program_id',
+//     'loyalty_program_rule_id', // Foreign key on LoyaltyProgramRule table
+//     'id', 
+//     'id', 
+// );
+//     }
+
+    //  public function rule()
+    // {
+    //     return $this->belongsTo(LoyaltyProgramRule::class, 'program_rule_id'); 
+    //     // replace 'program_rule_id' with the actual foreign key in your table
+    // }
 }

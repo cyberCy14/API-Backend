@@ -18,7 +18,6 @@ return new class extends Migration
             $table->string('transaction_title');
             $table->enum('type', ['income', 'expense', 'asset', 'liability']);
             $table->decimal('amount', 15, 2);
-            $table->dateTime('transaction_date');
 
             $table->timestamps();
         });

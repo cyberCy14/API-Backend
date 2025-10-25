@@ -41,18 +41,15 @@ class CustomerTransactionResource extends Resource
         $user = Auth::user();
         $query = parent::getEloquentQuery();
         
-        // If user is super_admin, show all transactions
         if ($user->hasRole('super_admin')) {
             return $query;
         }
         
-        // If user is handler, only show transactions from their companies
         if ($user->hasRole('handler')) {
             $companyIds = $user->getCompanyIds();
             return $query->whereIn('company_id', $companyIds);
         }
         
-        // Default: show no transactions if role is not recognized
         return $query->whereRaw('1 = 0');
     }
 
@@ -67,12 +64,10 @@ class CustomerTransactionResource extends Resource
         
         if (!$user) return false;
         
-        // Superadmin can edit any transaction
         if ($user->hasRole('super_admin')) {
             return true;
         }
         
-        // Handler can edit transactions from their companies
         if ($user->hasRole('handler')) {
             return $user->canAccessCompany($record->company_id);
         }
@@ -86,7 +81,6 @@ class CustomerTransactionResource extends Resource
         
         if (!$user) return false;
         
-        // Only super_admin can delete transactions (for data integrity)
         return $user->hasRole('super_admin');
     }
 
@@ -152,31 +146,16 @@ class CustomerTransactionResource extends Resource
                         ->prefix('PHP')
                         ->disabled(),
                     
-                    Forms\Components\Select::make('status')
-                        ->options(function ($record) {
-                            if ($record && $record->transaction_type === 'earning') {
-                                return [
-                                    'pending' => 'Pending',
-                                    'credited' => 'Credited',
-                                    'expired' => 'Expired',
-                                ];
-                            } elseif ($record && $record->transaction_type === 'redemption') {
-                                return [
-                                    'pending' => 'Pending',
-                                    'redeemed' => 'Redeemed',
-                                    'expired' => 'Expired',
-                                ];
-                            } else {
-                                return [
-                                    'pending' => 'Pending',
-                                    'credited' => 'Credited',
-                                    'redeemed' => 'Redeemed',
-                                    'expired' => 'Expired',
-                                ];
-                            }
-                        })
+
+                        Forms\Components\Select::make('status')
+                        ->options([
+                            'pending'   => 'Pending',
+                            'completed' => 'Completed',
+                            'cancelled' => 'Cancelled',
+                        ])
                         ->required()
                         ->disabled(fn ($record) => !static::canEdit($record)),
+
                     
                     Forms\Components\DateTimePicker::make('credited_at')
                         ->label('Credited At')
@@ -230,15 +209,16 @@ class CustomerTransactionResource extends Resource
                     ->sortable()
                     ->placeholder('N/A'),
                 
+          
                 Tables\Columns\TextColumn::make('status')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'pending' => 'warning',
-                        'credited' => 'success',
-                        'redeemed' => 'info',
-                        'expired' => 'danger',
-                        default => 'gray',
-                    }),
+                        ->badge()
+                        ->color(fn (string $state): string => match ($state) {
+                            'pending'   => 'warning',
+                            'completed' => 'success',
+                            'cancelled' => 'danger',
+                            default     => 'gray',
+                        }),
+
                 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Date')
@@ -261,7 +241,7 @@ class CustomerTransactionResource extends Resource
                         return $query->whereRaw('1 = 0');
                     })
                     ->preload()
-                    ->visible($isSuperadmin), // Only show for superadmin
+                    ->visible($isSuperadmin), 
                 
                 SelectFilter::make('loyalty_program_id')
                     ->label('Loyalty Program')
@@ -278,14 +258,15 @@ class CustomerTransactionResource extends Resource
                         return $query->whereRaw('1 = 0');
                     })
                     ->preload(),
-                
+            
+
                 SelectFilter::make('status')
                     ->options([
-                        'pending' => 'Pending',
-                        'credited' => 'Credited',
-                        'redeemed' => 'Redeemed',
-                        'expired' => 'Expired',
+                        'pending'   => 'Pending',
+                        'completed' => 'Completed',
+                        'cancelled' => 'Cancelled',
                     ]),
+
                 
                     Filter::make('customer')
                     ->form([
@@ -390,14 +371,12 @@ class CustomerTransactionResource extends Resource
             return false;
         }
     
-        // Super admin always sees everything
         if ($user->hasRole('super_admin')) {
             return true;
         }
     
-        // Handler can only see resources tied to their company
         if ($user->hasRole('handler')) {
-            return true; // They can access, but filtering is applied in getEloquentQuery()
+            return true; 
         }
     
         return false;

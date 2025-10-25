@@ -14,9 +14,11 @@ return new class extends Migration
         Schema::create('loyalty_program_rules', function (Blueprint $table) {
             // Primary key
             $table->id();
+
+            // Foreign key to loyalty_programs
             $table->foreignId('loyalty_program_id')
-                    ->constrained('loyalty_programs')
-                    ->onDelete('cascade');
+                  ->constrained('loyalty_programs')
+                  ->onDelete('cascade');
 
             $table->string('rule_name', 255);
             $table->enum('rule_type', ['purchase_based', 'referral', 'bonus'])->default('purchase_based');
